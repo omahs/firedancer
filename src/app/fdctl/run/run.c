@@ -346,6 +346,7 @@ main_pid_namespace( void * args ) {
       case wksp_dedup_pack:
       case wksp_pack_bank:
       case wksp_bank_shred:
+      case wksp_shred_store:
         break;
       case wksp_net:
         tile_cnt += config->layout.net_tile_count;
@@ -363,7 +364,11 @@ main_pid_namespace( void * args ) {
       case wksp_pack:
         tile_cnt++;
         break;
+      case wksp_shred:
+        tile_cnt++;
+        break;
       case wksp_bank:
+      case wksp_store:
         /* not included here, not a real pinned tile*/
         break;
     }
@@ -399,6 +404,7 @@ main_pid_namespace( void * args ) {
   for( ulong i=0; i<config->layout.verify_tile_count; i++ ) clone_tile( &spawner, &verify, i );
   clone_tile( &spawner, &dedup, 0 );
   clone_tile( &spawner, &pack , 0 );
+  clone_tile( &spawner, &shred, 0 );
 
   if( FD_UNLIKELY( sched_setaffinity( 0, sizeof(cpu_set_t), floating_cpu_set ) ) )
     FD_LOG_ERR(( "sched_setaffinity failed (%i-%s)", errno, fd_io_strerror( errno ) ));

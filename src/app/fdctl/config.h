@@ -19,6 +19,7 @@ typedef enum {
   wksp_dedup_pack,
   wksp_pack_bank,
   wksp_bank_shred,
+  wksp_shred_store,
   wksp_net,
   wksp_netmux,
   wksp_quic,
@@ -26,6 +27,8 @@ typedef enum {
   wksp_dedup,
   wksp_pack,
   wksp_bank,
+  wksp_shred,
+  wksp_store,
 } workspace_kind_t;
 
 FD_FN_CONST char *
@@ -175,6 +178,11 @@ typedef struct {
     struct {
       uint signature_cache_size;
     } dedup;
+
+    struct {
+      uint fec_resolver_depth;
+    } shred;
+
   } tiles;
 } config_t;
 

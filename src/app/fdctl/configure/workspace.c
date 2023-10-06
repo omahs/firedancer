@@ -21,6 +21,31 @@ init_perm( security_t *     security,
   check_res( security, NAME, RLIMIT_MEMLOCK, limit, "increase `RLIMIT_MEMLOCK` to lock the workspace in memory" );
 }
 
+static inline uchar *
+read_key( char const * key_path,
+          uchar      * key       ) {
+  FILE * key_file = fopen( key_path, "r" );
+  if( FD_UNLIKELY( !key_file ) ) {
+    if( FD_UNLIKELY( errno == ENOENT ) ) FD_LOG_ERR((
+          "The [consensus.identity_path] in your configuration expects a "
+          "keyfile at %s but there is no such file. Either update the "
+          "configuration file to point to your validator identity "
+          "keypair, or generate a new validator identity key by running "
+          "`fdctl keygen`", key_path ));
+    FD_LOG_ERR(( "Opening key file (%s) failed (%i-%s)", key_path,  errno, fd_io_strerror( errno ) ));
+  }
+
+  if( FD_UNLIKELY( 1!=fscanf( key_file, "[%hhu", &key[0] ) ) )   FD_LOG_ERR(( "parsing key file failed at pos=0"      ));
+  for( ulong i=1UL; i<64UL; i++ ) {
+    if( FD_UNLIKELY( 1!=fscanf( key_file, ",%hhu", &key[i] ) ) ) FD_LOG_ERR(( "parsing key file failed at pos=%lu", i ));
+  }
+  if( FD_UNLIKELY( 0!=fscanf( key_file, "] " ) ) )               FD_LOG_ERR(( "parsing key file failed at pos=64"     ));
+
+  if( FD_UNLIKELY( !feof( key_file  ) ) ) FD_LOG_ERR(( "key file had trailing garbage" ));
+  if( FD_UNLIKELY( fclose( key_file ) ) ) FD_LOG_ERR(( "fclose failed `%s` (%i-%s)", key_path, errno, fd_io_strerror( errno ) ));
+  return key;
+}
+
 #define INSERTER(arg, align, footprint, new) do {                                   \
     fd_wksp_t * wksp  = fd_wksp_containing( pod );                                  \
     ulong       gaddr = fd_wksp_alloc( wksp, ( align ), (footprint ), 1 );          \
@@ -67,6 +92,13 @@ static void fseq( void * pod, char * fmt, ... ) {
             fd_fseq_align    (          ),
             fd_fseq_footprint(          ),
             fd_fseq_new      ( shmem, 0 ) );
+}
+
+static void mvcc( void * pod, char * fmt, ulong app_sz, ... ) {
+  INSERTER( app_sz,
+            fd_mvcc_align    (               ),
+            fd_mvcc_footprint( app_sz        ),
+            fd_mvcc_new      ( shmem, app_sz ) );
 }
 
 static void quic( void * pod, char * fmt, fd_quic_limits_t * limits, ... ) {
@@ -244,6 +276,10 @@ init( config_t * const config ) {
           dcache( pod, "quic-out-dcache%lu", FD_NET_MTU, config->tiles.net.send_buffer_size, 0, i );
           fseq  ( pod, "quic-in-fseq%lu", i );
         }
+        mcache( pod, "shred-out-mcache", config->tiles.net.send_buffer_size );
+        fseq  ( pod, "shred-out-fseq" );
+        dcache( pod, "shred-out-dcache", FD_NET_MTU, config->tiles.net.send_buffer_size, 0 );
+        fseq  ( pod, "shred-in-fseq" );
         break;
       case wksp_quic_verify:
         for( ulong i=0; i<config->layout.verify_tile_count; i++ ) {
@@ -281,11 +317,19 @@ init( config_t * const config ) {
         }
         break;
       case wksp_bank_shred:
+        ulong1( pod, "cnt", config->layout.bank_tile_count );
         for( ulong i=0; i<config->layout.bank_tile_count; i++ ) {
+          /* FIXME switch bank->shred for receive_buffer_size */
           mcache( pod, "mcache%lu", config->tiles.bank.receive_buffer_size, i );
-          dcache( pod, "dcache%lu", USHORT_MAX, config->layout.bank_tile_count * (ulong)config->tiles.bank.receive_buffer_size, 0, i );
+          dcache( pod, "dcache%lu", USHORT_MAX, config->tiles.bank.receive_buffer_size, 0, i );
           fseq  ( pod, "fseq%lu", i );
         }
+        break;
+      case wksp_shred_store:
+        /* FIXME switch bank->store for receive_buffer_size */
+        mcache( pod, "mcache", config->tiles.bank.receive_buffer_size );
+        fseq  ( pod, "fseq" );
+        dcache( pod, "dcache", 41768UL, 4UL*(4UL+config->tiles.shred.fec_resolver_depth+config->tiles.bank.receive_buffer_size), 0 );
         break;
       case wksp_net:
         for( ulong i=0; i<config->layout.net_tile_count; i++ ) {
@@ -344,12 +388,24 @@ init( config_t * const config ) {
       case wksp_pack:
         cnc   ( pod, "cnc" );
         ulong1( pod, "depth",   config->tiles.pack.max_pending_transactions );
+        alloc ( pod, "poh_slot",  32UL, 8UL                                 );
         break;
       case wksp_bank:
-        for( ulong i=0; i<config->layout.verify_tile_count; i++ ) {
+        for( ulong i=0; i<config->layout.bank_tile_count; i++ ) {
           cnc   ( pod, "cnc%lu", i );
         }
         break;
+      case wksp_shred:
+        cnc   ( pod, "cnc" );
+        uint1 ( pod, "ip_addr",              config->tiles.net.ip_addr                            );
+        buf   ( pod, "src_mac_addr",         config->tiles.net.mac_addr, 6                        );
+        ulong1( pod, "fec_resolver_depth",   config->tiles.shred.fec_resolver_depth               );
+        mvcc  ( pod, "cluster_nodes",        16UL + 50000UL*46UL                                  ); /* max of 50k validators */
+        uchar key[64];
+        buf   ( pod, "identity_key",         read_key( config->consensus.identity_path, key ), 64 );
+        break;
+      case wksp_store:
+        cnc( pod, "cnc" );
     }
 
     WKSP_END();

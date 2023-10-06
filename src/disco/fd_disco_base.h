@@ -6,8 +6,9 @@
 
 #include "../util/wksp/fd_wksp_private.h"
 
-#define SRC_TILE_NET  (0UL)
-#define SRC_TILE_QUIC (1UL)
+#define SRC_TILE_NET   (0UL)
+#define SRC_TILE_QUIC  (1UL)
+#define SRC_TILE_SHRED (2UL)
 
 /* FD_NET_MTU is the max full packet size, with ethernet, IP, and UDP
    headers that can go in or out of the net tile.  2048 is the maximum

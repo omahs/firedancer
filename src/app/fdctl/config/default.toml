@@ -307,7 +307,7 @@ dynamic_port_range = "8000-10000"
     #
     # It is suggested to use all available CPU cores for Firedancer, so that the
     # Solana network can run as fast as possible.
-    affinity = "0-14"
+    affinity = "0-15"
 
     # How many net tiles to run.  Each networking tile will service exactly one
     # queue from a network device being listened to.  If there are less net
@@ -549,6 +549,23 @@ dynamic_port_range = "8000-10000"
         # available, it can make sense to increase this cache size to protect
         # against denial of service from high volumes of transaction spam.
         signature_cache_size = 4194302
+
+    # The shred tile performs two similar tasks: producing shreds when
+    # the local validator is the leader, and forwarding shreds when the
+    # validator is not the leader.  In either case, the shred tile sends
+    # the shreds on the network and to the blockstore.
+    [tiles.shred]
+        # The shred tile waits until it has received a full forward
+        # error correction set of shreds before sending the shreds to
+        # the blockstore to ensure that the shreds can be completely
+        # validated.  Shreds typically arrive out of order, which means
+        # that the shred tile requires a relatively large buffer of
+        # partially received FEC sets. fec_resolver_depth controls the
+        # size of this buffer.
+        # To compute an appropriate value, multiply the expected Turbine
+        # worst-case latency (tenths of seconds) by the expected
+        # transaction rate, and divide by approx 25.
+        fec_resolver_depth = 16384
 
 # These options can be useful for development, but should not be used when
 # connecting to a live cluster, as they may cause the validator to be unsstable
