@@ -47,7 +47,8 @@ run( fd_tile_args_t * tile_args ) {
   args.src_ip = fd_pod_query_uint( tile_pod, "ip_addr", 0 );
   if( FD_UNLIKELY( !args.src_ip  ) ) FD_LOG_ERR(( "ip_addr missing from pod"      ));
 
-  args.shred_version = (ushort)0; /* TODO */
+  args.shred_version = fd_pod_query_ushort( tile_pod, "shred_version", 0 );
+  if( FD_UNLIKELY( !args.shred_version ) ) FD_LOG_ERR(( "shred version missing or 0" ));
 
   args.cnc = fd_cnc_join( fd_wksp_pod_map( tile_pod, "cnc" ) );
   args.pid = (ulong)tile_args->pid;

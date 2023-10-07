@@ -1,10 +1,12 @@
 #define _GNU_SOURCE
 #include "../../fdctl/configure/configure.h"
+#include "../../../ballet/sha256/fd_sha256.h"
 
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <stdio.h>
 
 #define NAME "genesis"
 
@@ -17,6 +19,42 @@ enabled( config_t * const config ) {
 
 /* todo ... port this out of solana code */
 extern void solana_genesis_main( const char ** args );
+
+static ushort
+compute_shred_version( char const * genesis_path ) {
+  /* Compute the shred version and the genesis hash */
+  fd_sha256_t _sha[ 1 ];  fd_sha256_t * sha = fd_sha256_join( fd_sha256_new( _sha ) );
+  fd_sha256_init( sha );
+  uchar buffer[ 1024 ];
+
+  FILE * genesis_file = fopen( genesis_path, "r" );
+  if( FD_UNLIKELY( !genesis_file ) )
+    FD_LOG_ERR(( "Opening genesis file (%s) failed (%i-%s)", genesis_path, errno, fd_io_strerror( errno ) ));
+
+  while( !feof( genesis_file ) ) {
+    ulong read = fread( buffer, 1UL, sizeof(buffer), genesis_file );
+    if( FD_UNLIKELY( ferror( genesis_file ) ) )
+      FD_LOG_ERR(( "fread failed `%s` (%i-%s)", genesis_path, errno, fd_io_strerror( errno ) ));
+
+    fd_sha256_append( sha, buffer, read );
+  }
+
+  if( FD_UNLIKELY( fclose( genesis_file ) ) )
+    FD_LOG_ERR(( "fclose failed `%s` (%i-%s)", genesis_path, errno, fd_io_strerror( errno ) ));
+
+  union {
+    uchar  c[ 32 ];
+    ushort s[ 16 ];
+  } hash;
+  fd_sha256_fini( sha, hash.c );
+  fd_sha256_delete( fd_sha256_leave( sha ) );
+
+  ushort xor = 0;
+  for( ulong i=0UL; i<16UL; i++ ) xor ^= hash.s[ i ];
+
+  xor = fd_ushort_bswap( xor );
+  return fd_ushort_if( xor<USHORT_MAX, (ushort)(xor + 1), USHORT_MAX );
+}
 
 static void
 init( config_t * const config ) {
@@ -114,6 +152,10 @@ init( config_t * const config ) {
     if( FD_UNLIKELY( WEXITSTATUS( wstatus ) ) )
       FD_LOG_ERR(( "genesis creation process exited with status %i", WEXITSTATUS( wstatus ) ));
   }
+
+  char genesis_path[ PATH_MAX ];
+  snprintf1( genesis_path, PATH_MAX, "%s/genesis.bin", config->ledger.path );
+  config->consensus.expected_shred_version = compute_shred_version( genesis_path );
 }
 
 static void

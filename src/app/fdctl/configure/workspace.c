@@ -396,13 +396,14 @@ init( config_t * const config ) {
         }
         break;
       case wksp_shred:
-        cnc   ( pod, "cnc" );
-        uint1 ( pod, "ip_addr",              config->tiles.net.ip_addr                            );
-        buf   ( pod, "src_mac_addr",         config->tiles.net.mac_addr, 6                        );
-        ulong1( pod, "fec_resolver_depth",   config->tiles.shred.fec_resolver_depth               );
-        mvcc  ( pod, "cluster_nodes",        16UL + 50000UL*46UL                                  ); /* max of 50k validators */
-        uchar key[64];
-        buf   ( pod, "identity_key",         read_key( config->consensus.identity_path, key ), 64 );
+        cnc    ( pod, "cnc" );
+        ushort1( pod, "shred_version",        config->consensus.expected_shred_version, 0          );
+        uint1  ( pod, "ip_addr",              config->tiles.net.ip_addr                            );
+        buf    ( pod, "src_mac_addr",         config->tiles.net.mac_addr, 6                        );
+        ulong1 ( pod, "fec_resolver_depth",   config->tiles.shred.fec_resolver_depth               );
+        mvcc   ( pod, "cluster_nodes",        16UL + 50000UL*46UL                                  ); /* max of 50k validators */
+        uchar  key[64];
+        buf    ( pod, "identity_key",         read_key( config->consensus.identity_path, key ), 64 );
         break;
       case wksp_store:
         cnc( pod, "cnc" );
