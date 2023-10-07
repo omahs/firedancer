@@ -105,8 +105,13 @@ typedef struct {
     int    only_known;
     int    pubsub_enable_block_subscription;
     int    pubsub_enable_vote_subscription;
-    int    incremental_snapshots;
   } rpc;
+
+  struct {
+    int   incremental_snapshots;
+    uint  full_snapshot_interval_slots;
+    uint  incremental_snapshot_interval_slots;
+  } snapshots;
 
   struct {
     char affinity[ AFFINITY_SZ ];

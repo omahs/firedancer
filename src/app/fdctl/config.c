@@ -277,7 +277,10 @@ static void parse_key_value( config_t *   config,
   ENTRY_BOOL  ( ., rpc,                 only_known                                                );
   ENTRY_BOOL  ( ., rpc,                 pubsub_enable_block_subscription                          );
   ENTRY_BOOL  ( ., rpc,                 pubsub_enable_vote_subscription                           );
-  ENTRY_BOOL  ( ., rpc,                 incremental_snapshots                                     );
+
+  ENTRY_BOOL  ( ., snapshots,           incremental_snapshots                                     );
+  ENTRY_UINT  ( ., snapshots,           full_snapshot_interval_slots                              );
+  ENTRY_UINT  ( ., snapshots,           incremental_snapshot_interval_slots                       );
 
   ENTRY_STR   ( ., layout,              affinity                                                  );
   ENTRY_UINT  ( ., layout,              net_tile_count                                            );

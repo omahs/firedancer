@@ -67,6 +67,10 @@ update_config_for_dev( config_t * const config ) {
      validator will get stuck forever. */
   config->consensus.wait_for_vote_to_start_leader = 0;
 
+  /* We have to wait until we get a snapshot before we can join a second
+     validator to this one, so make this smaller than the default.  */
+  config->snapshots.full_snapshot_interval_slots = 200U;
+
   if( FD_LIKELY( !strcmp( config->consensus.vote_account_path, "" ) ) )
     snprintf1( config->consensus.vote_account_path,
                sizeof( config->consensus.vote_account_path ),

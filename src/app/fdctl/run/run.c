@@ -285,7 +285,11 @@ solana_labs_main( void * args ) {
   if( config->rpc.only_known ) ADD1( "--only-known-rpc" );
   if( config->rpc.pubsub_enable_block_subscription ) ADD1( "--rpc-pubsub-enable-block-subscription" );
   if( config->rpc.pubsub_enable_vote_subscription ) ADD1( "--rpc-pubsub-enable-vote-subscription" );
-  if( config->rpc.incremental_snapshots ) ADD1( "--incremental-snapshots" );
+
+  /* snapshots */
+  if( !config->snapshots.incremental_snapshots ) ADD1( "--no-incremental-snapshots" );
+  ADDU( "--full-snapshot-interval-slots", config->snapshots.full_snapshot_interval_slots );
+  ADDU( "--incremental-snapshot-interval-slots", config->snapshots.incremental_snapshot_interval_slots );
 
   argv[ idx ] = NULL;
 

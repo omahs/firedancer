@@ -158,9 +158,23 @@ dynamic_port_range = "8000-10000"
     # `--rpc-pubsub-enable-vote-subscription` argument.
     pubsub_enable_vote_subscription = false
 
+# The Solana Labs client periodically takes snapshots of the chain's
+# state that other clients can query to catch up to the current state.
+[snapshots]
     # Enable incremental snapshots by setting this flag. This option is passed
-    # to the Solana Labs client with the `--incremental-snapshots` flag.
-    incremental_snapshots = false
+    # to the Solana Labs client (inverted) with the
+    # `--no-incremental-snapshots` flag.
+    incremental_snapshots = true
+
+    # Set how frequently full snapshots are taken, measured in slots.
+    # It's recommended to leave this to the default or to set it to the
+    # same value that the known validators are using.
+    full_snapshot_interval_slots = 25000
+
+    # Set how frequently incremental snapshots are taken, measured in
+    # slots. Must be a multiple of the accounts hash interval (which is
+    # 100 by default).
+    incremental_snapshot_interval_slots = 100
 
 [consensus]
     # Absolute path to a `keypair.json` file containing the identity of the
