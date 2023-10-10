@@ -93,6 +93,8 @@ run( fd_tile_args_t * tile_args ) {
 
   ulong scratch_footprint = fd_shred_tile_scratch_footprint( bank_cnt, shred_store_mcache_depth, args.fec_resolver_depth, args.fec_resolver_done_depth );
   void * shred_tile_mem = fd_wksp_alloc_laddr( fd_wksp_containing( tile_pod ), fd_shred_tile_scratch_align(), scratch_footprint, FD_SHRED_TAG );
+  if( FD_UNLIKELY( !shred_tile_mem ) ) FD_LOG_ERR(( "fd_wksp_alloc_laddr failed" ));
+
   FD_LOG_NOTICE(( "shred tile footprint %lu. Base %p", scratch_footprint, shred_tile_mem ));
 
   fd_shred_tile( &args, shred_tile_mem );

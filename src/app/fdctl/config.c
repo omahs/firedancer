@@ -588,7 +588,7 @@ init_workspaces( config_t * config ) {
   config->shmem.workspaces[ idx ].kind      = wksp_shred;
   config->shmem.workspaces[ idx ].name      = "shred";
   config->shmem.workspaces[ idx ].page_size = FD_SHMEM_GIGANTIC_PAGE_SZ;
-  config->shmem.workspaces[ idx ].num_pages = 1;
+  config->shmem.workspaces[ idx ].num_pages = 3;
   idx++;
 
   config->shmem.workspaces[ idx ].kind      = wksp_store;
