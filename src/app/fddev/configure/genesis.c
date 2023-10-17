@@ -81,6 +81,8 @@ init( config_t * const config ) {
   char * argv[ 128 ];
   uint bufidx = 0;
   char buffer[ 32 ][ 16 ];
+    (void)buffer;
+    (void)bufidx;
 #define ADD1( arg ) do { argv[ idx++ ] = arg; } while( 0 )
 #define ADD( arg, val ) do { argv[ idx++ ] = arg; argv[ idx++ ] = val; } while( 0 )
 #define ADDU( arg, val ) do { argv[ idx++ ] = arg; snprintf1( buffer[ bufidx ], 16, "%u", val ); argv[ idx++ ] = buffer[ bufidx++ ]; } while( 0 )
@@ -90,8 +92,10 @@ init( config_t * const config ) {
 
   ADD( "--faucet-pubkey", faucet );
   ADD( "--hashes-per-tick", "sleep" );
-  ADDU( "--faucet-lamports", 500000000000000000UL );
+//  ADDU( "--faucet-lamports", 500000000000000000UL );
+  ADD( "--faucet-lamports", "2399348000000000" );
   ADD( "--bootstrap-validator", config->consensus.identity_path ); ADD1( vote ); ADD1( stake );
+  ADD( "--bootstrap-validator-lamports", "2399348000000000" );
   ADD( "--ledger", config->ledger.path );
   ADD( "--cluster-type", "development" );
 
