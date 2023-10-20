@@ -47,7 +47,10 @@ fd_pack_tile( fd_cnc_t *              cnc,       /* Local join to the packs's co
               ulong **                out_busy,  /* out_busy[out_idx] is the local join to reliable consumer out_idx's busy fseq */
               ulong                   cr_max,    /* Maximum number of flow control credits, 0 means use a reasonable default */
               long                    lazy,      /* Lazyiness, <=0 means use a reasonable default */
-              fd_rng_t *              rng,       /* Local join to the rng this packs should use */
+              ulong *                 poh_slot,  /* Pointer to where Labs will write the slot of its current bank */
+              ulong *                 poh_reset_slot, /* Pointer to where Labs will write the slot its bank is reset onto */
+              void const *            identity,  /* The validator's identity pubkey */
+              fd_rng_t *              rng,       /* Local join to the rng this pack should use */
               void *                  scratch ); /* Tile scratch memory */
 
 FD_PROTOTYPES_END

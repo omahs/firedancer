@@ -15,6 +15,18 @@ init( fd_tile_args_t * args ) {
   /* calling fd_tempo_tick_per_ns requires nanosleep, it is cached with
      a FD_ONCE */
   fd_tempo_tick_per_ns( NULL );
+
+  /* Read just the public key (last 32 bytes) */
+  const uchar * tile_pod = args->wksp_pod[ 0 ];
+
+  /* This seems like overkill for just the public key, but it's not
+     really easy to load just the public key without also getting the
+     private key. */
+  char const * key_path = fd_pod_query_cstr( tile_pod, "identity_key_path", NULL );
+  if( FD_UNLIKELY( !key_path ) ) FD_LOG_ERR(( "identity_key_path not found in pod" ));
+
+  uchar const * pubkey = load_key_into_protected_memory( key_path, 1 /* public_key_only */ );
+  args->lo_xsk = (void *)pubkey; /* FIXME: hack */
 }
 
 static void
@@ -43,26 +55,34 @@ run( fd_tile_args_t * args ) {
 
   FD_LOG_INFO(( "packing blocks of at most %lu transactions to %lu bank tiles", max_txn_per_microblock, out_cnt ));
 
-  const fd_frag_meta_t * in_mcache[2] = {
+  ulong * poh_slot       = fd_wksp_pod_map( tile_pod, "poh_slot"       );
+  ulong * poh_reset_slot = fd_wksp_pod_map( tile_pod, "poh_reset_slot" );
+
+#define IN_CNT 3
+  const fd_frag_meta_t * in_mcache[IN_CNT] = {
     fd_mcache_join( fd_wksp_pod_map( in_pod, "mcache" ) ),
     fd_mcache_join( fd_wksp_pod_map( in_pod, "gossip-mcache" ) ),
+    fd_mcache_join( fd_wksp_pod_map( in_pod, "lsched-mcache" ) ),
   };
 
-  ulong * in_fseq[2] = {
+  ulong * in_fseq[IN_CNT] = {
     fd_fseq_join( fd_wksp_pod_map( in_pod, "fseq" ) ),
     fd_fseq_join( fd_wksp_pod_map( in_pod, "gossip-fseq" ) ),
+    fd_fseq_join( fd_wksp_pod_map( in_pod, "lsched-fseq" ) ),
+
   };
 
-  const uchar * in_dcache[2] = {
+  const uchar * in_dcache[IN_CNT] = {
     fd_dcache_join( fd_wksp_pod_map( in_pod, "dcache" ) ),
     fd_dcache_join( fd_wksp_pod_map( in_pod, "gossip-dcache" ) ),
+    fd_dcache_join( fd_wksp_pod_map( in_pod, "lsched-dcache" ) ),
   };
 
   fd_rng_t   _rng[1];
   fd_rng_t * rng = fd_rng_join( fd_rng_new( _rng, 0, 0UL ) );
   fd_pack_tile( fd_cnc_join( fd_wksp_pod_map( tile_pod, "cnc" ) ),
                 (ulong)args->pid,
-                2,
+                IN_CNT,
                 in_mcache,
                 in_fseq,
                 in_dcache,
@@ -74,8 +94,12 @@ run( fd_tile_args_t * args ) {
                 out_busy,
                 0,
                 0,
+                poh_slot,
+                poh_reset_slot,
+                (void const *)args->lo_xsk,
                 rng,
-                fd_alloca( FD_PACK_TILE_SCRATCH_ALIGN, FD_PACK_TILE_SCRATCH_FOOTPRINT( 2, out_cnt ) ) );
+                fd_alloca( FD_PACK_TILE_SCRATCH_ALIGN, FD_PACK_TILE_SCRATCH_FOOTPRINT( IN_CNT, out_cnt ) ) );
+#undef IN_CNT
 }
 
 static long allow_syscalls[] = {

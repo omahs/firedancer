@@ -30,7 +30,7 @@ init( fd_tile_args_t * args ) {
   const char * identity_key_path = fd_pod_query_cstr( args->wksp_pod[ 0 ], "identity_key_path", NULL );
   if( FD_UNLIKELY( !identity_key_path ) ) FD_LOG_ERR(( "identity_key_path not found in tpod" ));
 
-  uchar const * key_page = load_key_into_protected_memory( identity_key_path );
+  uchar const * key_page = load_key_into_protected_memory( identity_key_path, /* pubkey only: */ 0 );
 
   args->xsk = (void *)key_page; /* FIXME: Fix this after topology merge */
 }

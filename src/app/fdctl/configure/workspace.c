@@ -287,7 +287,7 @@ init( config_t * const config ) {
            better to just share one size for all the ins */
         dcache( pod, "gossip-dcache", FD_TPU_DCACHE_MTU, config->tiles.verify.receive_buffer_size, 0 );
 
-        const ulong FD_LSCHED_MTU = 16UL + 432000UL * 32UL;
+        const ulong FD_LSCHED_MTU = 24UL + 432000UL * 32UL;
         mcache( pod, "lsched-mcache", 128UL );
         fseq  ( pod, "lsched-fseq" );
         dcache( pod, "lsched-dcache", FD_LSCHED_MTU, 128UL, 0 );
@@ -375,9 +375,10 @@ init( config_t * const config ) {
         break;
       case wksp_pack:
         cnc   ( pod, "cnc" );
-        ulong1( pod, "depth",            config->tiles.pack.max_pending_transactions );
-        alloc ( pod, "poh_slot",         32UL, 8UL                                   );
-        alloc ( pod, "poh_parent_slot",  32UL, 8UL                                   );
+        ulong1( pod, "depth",             config->tiles.pack.max_pending_transactions );
+        alloc ( pod, "poh_slot",          32UL, 8UL                                   );
+        alloc ( pod, "poh_reset_slot",    32UL, 8UL                                   );
+        cstr1 ( pod, "identity_key_path", config->consensus.identity_path             ); /* Only pubkey used */
         break;
       case wksp_bank:
         for( ulong i=0; i<config->layout.bank_tile_count; i++ ) {
