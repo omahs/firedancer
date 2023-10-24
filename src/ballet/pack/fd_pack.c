@@ -201,6 +201,12 @@ static const fd_acct_addr_t null_addr = { 0 };
 #define MAP_KEY_HASH(key)     ((uint)fd_ulong_hash( fd_ulong_load_8( (key).b ) ))
 #include "../../util/tmpl/fd_map_dynamic.c"
 
+/* Each block is limited to 32k parity shreds.  At worst, a microblock
+   batch contains 67 parity shreds.  Right now, we're using one
+   microblock per microblock batch, giving 32k/67 microblocks.  However,
+   the PoH service can also produce empty microblocks for ticks, so we
+   subtract 64. */
+#define FD_PACK_MAX_MICROBLOCKS_PER_BLOCK 425UL
 
 /* Finally, we can now declare the main pack data structure */
 struct fd_pack_private {
@@ -709,6 +715,8 @@ fd_pack_schedule_next_microblock( fd_pack_t *  pack,
   ulong vote_reserved_txns = fd_ulong_min( vote_cus/FD_PACK_TYPICAL_VOTE_COST,
                                            (ulong)((float)pack->max_txn_per_microblock * vote_fraction) );
 
+  if( FD_UNLIKELY( pack->microblock_cnt >= FD_PACK_MAX_MICROBLOCKS_PER_BLOCK ) ) return 0UL;
+
   ulong cu_limit  = total_cus - vote_cus;
   ulong txn_limit = pack->max_txn_per_microblock - vote_reserved_txns;
   ulong scheduled = 0UL;
@@ -741,7 +749,7 @@ fd_pack_schedule_next_microblock( fd_pack_t *  pack,
   scheduled                   += status.txns_scheduled;
   pack->cumulative_block_cost += status.cus_scheduled;
 
-  pack->microblock_cnt++;
+  pack->microblock_cnt += (ulong)(scheduled>0UL);
   pack->outstanding_microblock_mask |= 1UL << bank_tile;
 
   return scheduled;

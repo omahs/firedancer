@@ -19,7 +19,12 @@
 #define SET_MAX ((MAX_SLOTS_PER_EPOCH)/(NUM_CONSECUTIVE_LEADER_SLOTS))
 #include "../../../../util/tmpl/fd_set.c"
 
-#define BLOCK_DURATION_NS (400UL*1000UL*1000UL)
+#define BLOCK_DURATION_NS    (400UL*1000UL*1000UL)
+
+/* Right now with no batching in pack, we want to make sure we don't
+   produce more than about 400 microblocks.  Setting this to 8ms gives
+   us about 50 microblocks per bank.  TODO: adjust this. */
+#define MICROBLOCK_DURATION_NS (8L*1000L*1000L)
 
 /* About 1.5 kB on the stack */
 #define FD_PACK_PACK_MAX_OUT (16UL)
@@ -81,6 +86,7 @@ typedef struct {
 
   ulong    out_cnt;
   ulong *  out_busy[ FD_PACK_PACK_MAX_OUT ];
+  long     out_ready_at[ FD_PACK_PACK_MAX_OUT  ];
 
   fd_wksp_t * out_mem;
   ulong       out_chunk0;
@@ -116,9 +122,10 @@ during_housekeeping( void * _ctx ) {
 
   ulong new_poh_slot   = FD_VOLATILE_CONST( *(ctx->_poh_slot      ) );
   ulong new_reset_slot = FD_VOLATILE_CONST( *(ctx->_poh_reset_slot) );
-  if( FD_UNLIKELY( (new_poh_slot!=ctx->poh_slot) | (new_reset_slot!=ctx->poh_reset_slot) ) ) {
-    ctx->poh_slot          = new_poh_slot;
-    ctx->poh_reset_slot    = new_reset_slot;
+  if( FD_UNLIKELY( (new_poh_slot>ctx->poh_slot) | (new_reset_slot>ctx->poh_reset_slot) ) ) {
+    /* FIXME: Sometimes these flicker to 0. Fix this hack */
+    ctx->poh_slot          = fd_ulong_max( ctx->poh_slot, new_poh_slot );
+    ctx->poh_reset_slot    = fd_ulong_max( ctx->poh_reset_slot, new_reset_slot );
     ctx->poh_slots_updated  = 1; /* Handle all the state transitions in before_credit below */
   }
 }
@@ -240,10 +247,11 @@ after_credit( void *             _ctx,
   /* Am I leader? If not, nothing to do. */
   if( FD_UNLIKELY( ctx->packing_for == ULONG_MAX ) ) return;
 
+  long now = fd_tickcount();
   /* Is it time to schedule the next microblock? For each banking
      thread, if it's not busy... */
   for( ulong i=0UL; i<ctx->out_cnt; i++ ) {
-    if( FD_LIKELY( fd_fseq_query( ctx->out_busy[i] ) == *mux->seq ) ) { /* optimize for the case we send a microblock */
+    if( FD_LIKELY( (fd_fseq_query( ctx->out_busy[i] )==*mux->seq) & (ctx->out_ready_at[i]<now) ) ) { /* optimize for the case we send a microblock */
       fd_pack_microblock_complete( ctx->pack, i );
 
       void * microblock_dst = fd_chunk_to_laddr( ctx->out_mem, ctx->out_chunk );
@@ -262,6 +270,7 @@ after_credit( void *             _ctx,
         fd_mux_publish( mux, sig, chunk, msg_sz, 0, 0UL, tspub );
 
         ctx->out_chunk = fd_dcache_compact_next( ctx->out_chunk, msg_sz, ctx->out_chunk0, ctx->out_wmark );
+        ctx->out_ready_at[i] = now + MICROBLOCK_DURATION_NS;
       }
     }
   }
@@ -469,6 +478,7 @@ unprivileged_init( fd_topo_t *      topo,
   for( ulong i=0; i<out_cnt; i++ ) {
     ctx->out_busy[ i ] = tile->extra[ i ];
     if( FD_UNLIKELY( !ctx->out_busy[ i ] ) ) FD_LOG_ERR(( "banking tile %lu has no busy flag", i ));
+    ctx->out_ready_at[ i ] = 0L;
   }
 
   for( ulong i=0; i<tile->in_cnt; i++ ) {

@@ -175,6 +175,7 @@ fd_shredder_next_fec_set( fd_shredder_t * shredder,
        signature and goes until start of Merkle proof. */
     fd_reedsol_encode_add_data_shred( reedsol, ((uchar*)shred) + sizeof(fd_ed25519_sig_t) );
   }
+  FD_LOG_NOTICE(( "Shredding batch part of slot %lu with parity_idx_off %lu %lu", shredder->meta.slot, shredder->parity_idx_offset, entry_sz ));
 
   for( ulong j=0UL; j<parity_shred_cnt; j++ ) {
     fd_shred_t         * shred = (fd_shred_t *)parity_shreds[ j ];
