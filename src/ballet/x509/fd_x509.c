@@ -56,6 +56,29 @@ fd_x509_gen_solana_cert( EVP_PKEY * pkey ) {
   }
   ASN1_INTEGER_set_uint64( X509_get_serialNumber(x), serial );
 
+  /* set issuer */
+  uchar const * issuer_str = (uchar const *)"Solana node";
+  X509_NAME * x509_issuer = X509_NAME_new();
+  if( !X509_NAME_add_entry_by_txt( x509_issuer, "CN", MBSTRING_ASC, issuer_str, -1, -1, 0) ) {
+    FD_LOG_ERR(( "Unable to set X509 issuer: X509_NAME_add_entry_by_txt failed" ));
+  }
+  if( !X509_set_issuer_name( x, x509_issuer ) ) {
+    FD_LOG_ERR(( "Unable to set X509 issuer: X509_set_issuer_name failed" ));
+  }
+  X509_NAME_free( x509_issuer );
+
+  /* set subject */
+  uchar const * subject_str = (uchar const *)"Solana node";
+  X509_NAME * x509_subject = X509_NAME_new();
+  if( !X509_NAME_add_entry_by_txt( x509_subject, "CN", MBSTRING_ASC, subject_str, -1, -1, 0) ) {
+    FD_LOG_ERR(( "Unable to set X509 subject: X509_NAME_add_entry_by_txt failed" ));
+  }
+  if( !X509_set_subject_name( x, x509_subject ) ) {
+    FD_LOG_ERR(( "Unable to set X509 subject: X509_set_subject_name failed" ));
+  }
+  X509_NAME_free( x509_subject );
+
+
   /* Set public key (the only important part) */
   X509_set_pubkey( x, pkey );
 

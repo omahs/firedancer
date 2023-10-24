@@ -614,7 +614,13 @@ fd_pack_schedule_microblock_impl( fd_pack_t  * pack,
         fd_acct_addr_t acct_addr = acct[i];
 
         fd_pack_addr_use_t * in_wcost_table = acct_uses_query( writer_costs, acct_addr, NULL );
-        if( !in_wcost_table ) { in_wcost_table = acct_uses_insert( writer_costs, acct_addr );   in_wcost_table->total_cost = 0UL; }
+        if( !in_wcost_table ) {
+          in_wcost_table = acct_uses_insert( writer_costs, acct_addr );
+//          if ( ! in_wcost_table) {
+//            acct_uses_private_from_slot( writer_costs )
+//          }
+          in_wcost_table->total_cost = 0UL;
+        }
         in_wcost_table->total_cost += cur->compute_est;
 
         fd_pack_addr_use_t * use = acct_uses_insert( acct_in_use, acct_addr );
