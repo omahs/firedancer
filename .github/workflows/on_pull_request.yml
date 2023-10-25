@@ -1,0 +1,30 @@
+name: On Pull Request
+on:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-unit:
+    name: Unit Tests
+    uses: ./.github/workflows/_test_unit.yml
+    secrets: inherit
+
+  # todo: start testing for fuzz regressions once reedsol takes less than 6mins to build
+  # test-fuzz-regressions:
+  #   name: Test for Fuzzing Regressions
+  #   uses: ./.github/workflows/_test_fuzz_regressions.yml
+  #   secrets: inherit
+
+  build-frankandancer:
+    name: Build Frankendancer
+    uses: ./.github/workflows/_build_frankendancer.yml
+
+  test-functional:
+    name: Functional Tests
+    uses: ./.github/workflows/_test_functional.yml
+
+  whitespace-check:
+    name: Check for Whitespaces
+    uses: ./.github/workflows/_trailing_whitespace.yml
