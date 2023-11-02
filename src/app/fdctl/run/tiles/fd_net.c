@@ -5,6 +5,7 @@
 #include "../../../../tango/quic/fd_quic.h"
 #include "../../../../tango/xdp/fd_xdp.h"
 #include "../../../../tango/xdp/fd_xsk_private.h"
+#include "../../../../util/net/fd_ip4.h"
 
 #include <linux/unistd.h>
 
@@ -18,11 +19,13 @@ typedef struct {
   ulong round_robin_id;
 
   const fd_aio_t * tx;
+  const fd_aio_t * lo_tx;
 
   uchar frame[ FD_NET_MTU ];
 
   fd_mux_context_t * mux;
 
+  uint src_ip_addr;
   ushort allow_ports[ FD_NET_PORT_ALLOW_CNT ];
 
   fd_wksp_t * in_mem;
@@ -157,6 +160,15 @@ before_credit( void * _ctx,
   }
 }
 
+FD_FN_PURE static int
+route_loopback( uint  tile_ip_addr,
+                ulong sig ) {
+  // FD_LOG_WARNING(( "Routing to %u", fd_disco_netmux_sig_ip_addr( sig )));
+
+  return fd_disco_netmux_sig_ip_addr( sig )==FD_IP4_ADDR(127,0,0,1) ||
+    fd_disco_netmux_sig_ip_addr( sig )==tile_ip_addr;
+}
+
 static void
 before_frag( void * _ctx,
              ulong  in_idx,
@@ -169,10 +181,19 @@ before_frag( void * _ctx,
 
   ushort src_tile = fd_disco_netmux_sig_src_tile( sig );
 
-  /* round robin by sequence number for now, quic should be modified to
-     echo the net tile index back so we can transmit on the same queue */
-  int handled_packet = (seq % ctx->round_robin_cnt) == ctx->round_robin_id;
-  if( FD_UNLIKELY( src_tile == SRC_TILE_NET || !handled_packet ) ) {
+  /* Round robin by sequence number for now, QUIC should be modified to
+     echo the net tile index back so we can transmit on the same queue.
+     
+     127.0.0.1 packets for localhost must go out on net tile 0 which
+     owns the loopback interface XSK, which only has 1 queue. */
+  int handled_packet = 0;
+  if( FD_UNLIKELY( route_loopback( ctx->src_ip_addr, sig ) ) ) {
+    handled_packet = ctx->round_robin_id == 0;
+  } else {
+    handled_packet = (seq % ctx->round_robin_cnt) == ctx->round_robin_id;
+  }
+
+  if( FD_UNLIKELY( src_tile==SRC_TILE_NET || !handled_packet ) ) {
     *opt_filter = 1;
   }
 }
@@ -214,7 +235,31 @@ after_frag( void *             _ctx,
   fd_net_ctx_t * ctx = (fd_net_ctx_t *)_ctx;
 
   fd_aio_pkt_info_t aio_buf = { .buf = ctx->frame, .buf_sz = (ushort)*opt_sz };
-  ctx->tx->send_func( ctx->xsk_aio[ 0 ], &aio_buf, 1, NULL, 1 );
+  if( FD_UNLIKELY( route_loopback( ctx->src_ip_addr, *opt_sig ) ) ) {
+    /* Because we are skipping part of the kernel networking stack, we
+       need to reformat the packet so it will get accepted onto the
+       loopback device.  A few things are needed,
+       
+        (1) The src and dst ip addresses both need to be zero. Not
+            entirely sure why, but the kernel will silently discard
+            packets that arrive onto lo without this, probably it
+            sets them to zero as part of a sanity check in the code
+            that runs before the XDP splice point.
+            
+        (2) The src mac address can be anything, but the dst mac
+            address must be zero.  Similar story to the above, not
+            entirely sure why. */
+    eth_ip_udp_t * hdr = (eth_ip_udp_t *)ctx->frame;
+    fd_memset( hdr->eth->dst, 0, 6UL );
+    fd_memset( hdr->ip4->daddr_c, 0, 4UL );
+    fd_memset( hdr->ip4->saddr_c, 0, 4UL );
+    hdr->ip4->check = 0U;
+    /* TODO: Do we need to update check here? */
+    hdr->ip4->check = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
+    ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], &aio_buf, 1, NULL, 1 );
+  } else {
+    ctx->tx->send_func( ctx->xsk_aio[ 0 ], &aio_buf, 1, NULL, 1 );
+  }
 
   *opt_filter = 1;
 }
@@ -269,6 +314,42 @@ privileged_init( fd_topo_t *      topo,
   }
 }
 
+#include "../../../../util/net/fd_eth.h"
+#include "../../../../util/net/fd_ip4.h"
+#include "../../../../util/net/fd_udp.h"
+
+typedef struct __attribute__((packed)) {
+  fd_eth_hdr_t eth[1];
+  fd_ip4_hdr_t ip4[1];
+  fd_udp_hdr_t udp[1];
+} eth_ip_udp_t;
+
+static inline void
+populate_packet_header_template( eth_ip_udp_t * pkt,
+                                 ulong          payload_sz,
+                                 uint           src_ip,
+                                 uchar const *  src_mac,
+                                 ushort         src_port ) {
+  memset( pkt->eth->dst, 0,       6UL );
+  memcpy( pkt->eth->src, src_mac, 6UL );
+  pkt->eth->net_type  = fd_ushort_bswap( FD_ETH_HDR_TYPE_IP );
+
+  pkt->ip4->verihl       = FD_IP4_VERIHL( 4U, 5U );
+  pkt->ip4->tos          = (uchar)0;
+  pkt->ip4->net_tot_len  = fd_ushort_bswap( (ushort)(payload_sz + sizeof(fd_ip4_hdr_t)+sizeof(fd_udp_hdr_t)) );
+  pkt->ip4->net_frag_off = fd_ushort_bswap( FD_IP4_HDR_FRAG_OFF_DF );
+  pkt->ip4->ttl          = (uchar)64;
+  pkt->ip4->protocol     = FD_IP4_HDR_PROTOCOL_UDP;
+  pkt->ip4->check        = 0U;
+  memcpy( pkt->ip4->saddr_c, &src_ip, 4UL );
+  memset( pkt->ip4->daddr_c, 0,       4UL ); /* varies by shred */
+
+  pkt->udp->net_sport = fd_ushort_bswap( src_port );
+  pkt->udp->net_dport = (ushort)0; /* varies by shred */
+  pkt->udp->net_len   = fd_ushort_bswap( (ushort)(payload_sz + sizeof(fd_udp_hdr_t)) );
+  pkt->udp->check     = (ushort)0;
+}
+
 static void
 unprivileged_init( fd_topo_t *      topo,
                    fd_topo_tile_t * tile,
@@ -286,13 +367,16 @@ unprivileged_init( fd_topo_t *      topo,
   ctx->xsk_aio[ 0 ] = fd_xsk_aio_join( init_ctx->xsk_aio, init_ctx->xsk );
   if( FD_UNLIKELY( !ctx->xsk_aio[ 0 ] ) ) FD_LOG_ERR(( "fd_xsk_aio_join failed" ));
   fd_xsk_aio_set_rx( ctx->xsk_aio[ 0 ], net_rx_aio );
+  ctx->tx = fd_xsk_aio_get_tx( init_ctx->xsk_aio );
   if( FD_UNLIKELY( init_ctx->lo_xsk ) ) {
     ctx->xsk_aio[ 1 ] = fd_xsk_aio_join( init_ctx->lo_xsk_aio, init_ctx->lo_xsk );
     if( FD_UNLIKELY( !ctx->xsk_aio[ 1 ] ) ) FD_LOG_ERR(( "fd_xsk_aio_join failed" ));
     fd_xsk_aio_set_rx( ctx->xsk_aio[ 1 ], net_rx_aio );
+    ctx->lo_tx = fd_xsk_aio_get_tx( init_ctx->lo_xsk_aio );
     ctx->xsk_aio_cnt = 2;
   }
-  ctx->tx = fd_xsk_aio_get_tx( init_ctx->xsk_aio );
+  
+  ctx->src_ip_addr = tile->net.src_ip_addr;
 
   for( ulong i=0UL; i<FD_NET_PORT_ALLOW_CNT; i++ ) {
     if( FD_UNLIKELY( !tile->net.allow_ports[ i ] ) ) FD_LOG_ERR(( "net tile listen port %lu was 0", i ));
@@ -322,6 +406,67 @@ unprivileged_init( fd_topo_t *      topo,
 
   if( FD_UNLIKELY( scratch_top > (ulong)scratch + scratch_footprint( tile ) ) )
     FD_LOG_ERR(( "scratch overflow %lu %lu %lu", scratch_top - (ulong)scratch - scratch_footprint( tile ), scratch_top, (ulong)scratch + scratch_footprint( tile ) ));
+
+  // uchar bond0_mac[6] = "\x00\x00\x00\x00\x00\x00";
+  uchar lo_mac[6] = "\x00\x00\x00\x00\x00\x00";
+  // uchar ext_mac[6] = "\xaa\x96\x91\xd1\xf6\xff";
+  // uchar random_mac[6] = "\xaa\xaa\xbb\xbb\xcc\xcc";
+
+  // uchar bond0_ip_addr[4] = { 86, 109, 3, 161 };
+  // uchar lo_ip_addr[4] = { 127, 0, 0, 1 };
+  // uchar ext_ip_addr[4] = { 86, 109, 3, 162 };
+  uchar zero_ip_addr[4] = { 0, 0, 0, 0 };
+
+  // uchar * macs[4] = { bond0_mac, lo_mac, ext_mac, random_mac };
+  // uchar * ip_addrs[4] = { bond0_ip_addr, lo_ip_addr, ext_ip_addr, zero_ip_addr };
+
+  uchar packet[ 256 ];
+  eth_ip_udp_t * hdr = (eth_ip_udp_t *)packet;
+  populate_packet_header_template( hdr, 4, *(uint*)zero_ip_addr, lo_mac, 0 );
+  memcpy( hdr->eth->dst, lo_mac, 6UL );
+
+  memcpy( hdr->ip4->daddr_c, zero_ip_addr, 4UL );
+  hdr->ip4->net_id     = fd_ushort_bswap( 0 );
+  hdr->ip4->check      = 0U;
+  hdr->ip4->check      = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
+
+  hdr->udp->net_dport  = fd_ushort_bswap( 9999 );
+
+  uchar data[4] = { 48, 49, 50, 51 };
+  fd_memcpy( packet+sizeof(eth_ip_udp_t), data, 4 );
+  ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], (fd_aio_pkt_info_t[]){ { .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+4 } }, 1, NULL, 1 );
+
+  // 3013
+  // src & dst ip, 0
+  // src mac = anything
+  // dst mac = lo
+  // for( ulong i=0; i<4; i++ ) {
+  //   for( ulong j=0; j<4; j++ ) {
+  //     for( ulong k=0; k<4; k++ ) {
+  //       for( ulong l=0; l<4; l++ ) {
+  //         uchar packet[ 256 ];
+  //         eth_ip_udp_t * hdr = (eth_ip_udp_t *)packet;
+  //         uint src_ip[1];
+  //         memcpy(src_ip, ip_addrs[i], 4);
+  //         populate_packet_header_template( hdr, 5, *src_ip, macs[j], 0 );
+  //         memcpy( hdr->eth->dst, macs[k], 6UL );
+// 
+  //         memcpy( hdr->ip4->daddr_c, ip_addrs[l], 4UL );
+  //         hdr->ip4->net_id     = fd_ushort_bswap( 0 );
+  //         hdr->ip4->check      = 0U;
+  //         hdr->ip4->check      = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
+// 
+  //         hdr->udp->net_dport  = fd_ushort_bswap( 9999 );
+// 
+  //         FD_LOG_WARNING(( "sending %lu %lu %lu %lu", i, j, k, l ));
+  //         uchar data[5] = { 48, (uchar)(48u+(uchar)i), (uchar)(48u+(uchar)j), (uchar)(48u+(uchar)k), (uchar)(48u+(uchar)l) };
+  //         fd_memcpy( packet+sizeof(eth_ip_udp_t), data, 5 );
+  //         ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], (fd_aio_pkt_info_t[]){ { .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+5 } }, 1, NULL, 1 );
+  //         // ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], (fd_aio_pkt_info_t[]){ { .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+5 } }, 1, NULL, 1 );
+  //       }
+  //     }
+  //   }
+  // }
 }
 
 static ulong

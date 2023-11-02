@@ -4,7 +4,7 @@
     {
       "name": "fddev",
       "type": "cppdbg",
-      "request": "launch",
+      "request": "attach",
       "cwd": "${workspaceFolder}/build/native/gcc/bin",
       "program": "${workspaceFolder}/build/native/gcc/bin/fddev",
       "args": ["--no-sandbox"],
