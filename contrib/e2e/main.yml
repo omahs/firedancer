@@ -1,0 +1,9 @@
+---
+
+- name: Firedancer e2e suite
+  hosts: all
+  gather_facts: no
+  become: no
+
+  roles:
+  - common
