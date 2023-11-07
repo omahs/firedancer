@@ -1,0 +1,7 @@
+# Generate temporary directory for clone
+
+# Clone git repo at desired tag/branch and recurse submodules
+
+# FD_AUTO_INSTALL_PACKAGES=1 ./deps.sh check install
+
+# make -j fdctl solana

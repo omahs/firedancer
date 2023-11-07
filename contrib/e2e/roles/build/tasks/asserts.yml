@@ -1,0 +1,7 @@
+# Check linux kernel version >= 5.7
+
+# Check gcc >= 8.3, otherwise go install deps
+
+# Check rust available, otherwise go install deps
+
+# Check clang and make available, otherwise go install deps

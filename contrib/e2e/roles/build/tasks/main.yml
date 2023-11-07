@@ -1,0 +1,14 @@
+---
+
+# Check asserts
+- name: Check build pre-requisites
+  import_tasks: asserts.yml
+
+# Install dependencies if required
+- name: Install dependencies if missing
+  import_tasks: dependencies.yml
+  when: install_deps is True
+
+# Build firedancer
+- name: Build firedancer binaries
+  import_tasks: fd_build.yml
