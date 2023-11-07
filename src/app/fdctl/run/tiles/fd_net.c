@@ -6,6 +6,7 @@
 #include "../../../../tango/xdp/fd_xdp.h"
 #include "../../../../tango/xdp/fd_xsk_private.h"
 #include "../../../../util/net/fd_ip4.h"
+#include "../../../../util/net/fd_eth.h"
 
 #include <linux/unistd.h>
 
@@ -249,13 +250,14 @@ after_frag( void *             _ctx,
         (2) The src mac address can be anything, but the dst mac
             address must be zero.  Similar story to the above, not
             entirely sure why. */
-    eth_ip_udp_t * hdr = (eth_ip_udp_t *)ctx->frame;
-    fd_memset( hdr->eth->dst, 0, 6UL );
-    fd_memset( hdr->ip4->daddr_c, 0, 4UL );
-    fd_memset( hdr->ip4->saddr_c, 0, 4UL );
-    hdr->ip4->check = 0U;
+    fd_eth_hdr_t * eth_hdr = (fd_eth_hdr_t *)ctx->frame;
+    memset( eth_hdr->dst, 0, 6UL );
+    fd_ip4_hdr_t * ip_hdr  = (fd_ip4_hdr_t *)((ulong)ctx->frame + sizeof(fd_eth_hdr_t));
+    memset( ip_hdr->daddr_c, 0, 4UL );
+    memset( ip_hdr->saddr_c, 0, 4UL );
+    ip_hdr->check = 0U;
     /* TODO: Do we need to update check here? */
-    hdr->ip4->check = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
+    ip_hdr->check = fd_ip4_hdr_check( ip_hdr );
     ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], &aio_buf, 1, NULL, 1 );
   } else {
     ctx->tx->send_func( ctx->xsk_aio[ 0 ], &aio_buf, 1, NULL, 1 );
@@ -407,66 +409,52 @@ unprivileged_init( fd_topo_t *      topo,
   if( FD_UNLIKELY( scratch_top > (ulong)scratch + scratch_footprint( tile ) ) )
     FD_LOG_ERR(( "scratch overflow %lu %lu %lu", scratch_top - (ulong)scratch - scratch_footprint( tile ), scratch_top, (ulong)scratch + scratch_footprint( tile ) ));
 
-  // uchar bond0_mac[6] = "\x00\x00\x00\x00\x00\x00";
+  uchar bond0_mac[6] = "\x00\x00\x00\x00\x00\x00";
   uchar lo_mac[6] = "\x00\x00\x00\x00\x00\x00";
-  // uchar ext_mac[6] = "\xaa\x96\x91\xd1\xf6\xff";
-  // uchar random_mac[6] = "\xaa\xaa\xbb\xbb\xcc\xcc";
+  uchar ext_mac[6] = "\xaa\x96\x91\xd1\xf6\xff";
+  uchar random_mac[6] = "\xaa\xaa\xbb\xbb\xcc\xcc";
 
-  // uchar bond0_ip_addr[4] = { 86, 109, 3, 161 };
-  // uchar lo_ip_addr[4] = { 127, 0, 0, 1 };
-  // uchar ext_ip_addr[4] = { 86, 109, 3, 162 };
+  uchar bond0_ip_addr[4] = { 86, 109, 3, 161 };
+  uchar lo_ip_addr[4] = { 127, 0, 0, 1 };
+  uchar ext_ip_addr[4] = { 86, 109, 3, 162 };
   uchar zero_ip_addr[4] = { 0, 0, 0, 0 };
 
-  // uchar * macs[4] = { bond0_mac, lo_mac, ext_mac, random_mac };
-  // uchar * ip_addrs[4] = { bond0_ip_addr, lo_ip_addr, ext_ip_addr, zero_ip_addr };
+  uchar * macs[4] = { bond0_mac, lo_mac, ext_mac, random_mac };
+  uchar * ip_addrs[4] = { bond0_ip_addr, lo_ip_addr, ext_ip_addr, zero_ip_addr };
 
-  uchar packet[ 256 ];
-  eth_ip_udp_t * hdr = (eth_ip_udp_t *)packet;
-  populate_packet_header_template( hdr, 4, *(uint*)zero_ip_addr, lo_mac, 0 );
-  memcpy( hdr->eth->dst, lo_mac, 6UL );
-
-  memcpy( hdr->ip4->daddr_c, zero_ip_addr, 4UL );
-  hdr->ip4->net_id     = fd_ushort_bswap( 0 );
-  hdr->ip4->check      = 0U;
-  hdr->ip4->check      = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
-
-  hdr->udp->net_dport  = fd_ushort_bswap( 9999 );
-
-  uchar data[4] = { 48, 49, 50, 51 };
-  fd_memcpy( packet+sizeof(eth_ip_udp_t), data, 4 );
-  ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], (fd_aio_pkt_info_t[]){ { .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+4 } }, 1, NULL, 1 );
 
   // 3013
   // src & dst ip, 0
   // src mac = anything
   // dst mac = lo
-  // for( ulong i=0; i<4; i++ ) {
-  //   for( ulong j=0; j<4; j++ ) {
-  //     for( ulong k=0; k<4; k++ ) {
-  //       for( ulong l=0; l<4; l++ ) {
-  //         uchar packet[ 256 ];
-  //         eth_ip_udp_t * hdr = (eth_ip_udp_t *)packet;
-  //         uint src_ip[1];
-  //         memcpy(src_ip, ip_addrs[i], 4);
-  //         populate_packet_header_template( hdr, 5, *src_ip, macs[j], 0 );
-  //         memcpy( hdr->eth->dst, macs[k], 6UL );
-// 
-  //         memcpy( hdr->ip4->daddr_c, ip_addrs[l], 4UL );
-  //         hdr->ip4->net_id     = fd_ushort_bswap( 0 );
-  //         hdr->ip4->check      = 0U;
-  //         hdr->ip4->check      = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
-// 
-  //         hdr->udp->net_dport  = fd_ushort_bswap( 9999 );
-// 
-  //         FD_LOG_WARNING(( "sending %lu %lu %lu %lu", i, j, k, l ));
-  //         uchar data[5] = { 48, (uchar)(48u+(uchar)i), (uchar)(48u+(uchar)j), (uchar)(48u+(uchar)k), (uchar)(48u+(uchar)l) };
-  //         fd_memcpy( packet+sizeof(eth_ip_udp_t), data, 5 );
-  //         ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], (fd_aio_pkt_info_t[]){ { .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+5 } }, 1, NULL, 1 );
-  //         // ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], (fd_aio_pkt_info_t[]){ { .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+5 } }, 1, NULL, 1 );
-  //       }
-  //     }
-  //   }
-  // }
+  for( ulong i=0; i<4; i++ ) {
+    for( ulong j=0; j<4; j++ ) {
+      for( ulong k=0; k<4; k++ ) {
+        for( ulong l=0; l<4; l++ ) {
+          uchar packet[ 256 ];
+          eth_ip_udp_t * hdr = (eth_ip_udp_t *)packet;
+          uint src_ip[1];
+          memcpy(src_ip, ip_addrs[i], 4);
+          populate_packet_header_template( hdr, 6, *src_ip, macs[j], 0 );
+          memcpy( hdr->eth->dst, macs[k], 6UL );
+//
+          memcpy( hdr->ip4->daddr_c, ip_addrs[l], 4UL );
+          hdr->ip4->net_id     = fd_ushort_bswap( 0 );
+          hdr->ip4->check      = 0U;
+          hdr->ip4->check      = fd_ip4_hdr_check( ( fd_ip4_hdr_t const *) FD_ADDRESS_OF_PACKED_MEMBER( hdr->ip4 ) );
+//
+          hdr->udp->net_dport  = fd_ushort_bswap( 9999 );
+//
+          FD_LOG_WARNING(( "sending %lu %lu %lu %lu", i, j, k, l ));
+          uchar data[6] = { 48, (uchar)(48u+(uchar)i), (uchar)(48u+(uchar)j), (uchar)(48u+(uchar)k), (uchar)(48u+(uchar)l), (uchar)'\n' };
+          fd_memcpy( packet+sizeof(eth_ip_udp_t), data, 6 );
+          FD_LOG_HEXDUMP_NOTICE(( "packet", packet, sizeof(eth_ip_udp_t)+6UL ));
+          fd_aio_pkt_info_t send[1] = {{ .buf = packet, .buf_sz = sizeof(eth_ip_udp_t)+6 }};
+          ctx->lo_tx->send_func( ctx->xsk_aio[ 1 ], send, 1, NULL, 1 );
+        }
+      }
+    }
+  }
 }
 
 static ulong
