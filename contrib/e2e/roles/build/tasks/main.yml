@@ -9,6 +9,16 @@
   import_tasks: dependencies.yml
   when: install_deps is True
 
+# TODO: different labs and fd build hosts
+
 # Build firedancer
 - name: Build firedancer binaries
   import_tasks: fd_build.yml
+
+# Build solana
+- name: Build solana binaries
+  import_tasks: labs_build.yml
+
+# Distribute firedancer and solana binaries
+- name: Distribute firedancer and solana binaries
+  import_tasks: distribute.yml

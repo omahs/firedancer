@@ -1,0 +1,26 @@
+# Generate temporary directory for clone
+- name: Create temporary directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: solana_repo_
+  register: solana_repo_dir
+
+# Clone git repo at desired tag/branch
+- name: Clone repository
+  git:
+    repo: "{{ solana_repo }}"
+    dest: "{{ solana_repo_dir.path }}"
+    version: "{{ solana_repo_version }}"
+    force: true
+    depth: 1
+
+# TODO: Install solana dependencies
+
+- name: Build Solana
+  script:
+    cmd: "files/labs_build.sh --{{ solana_build_profile }} {{ solana_build_targets }}"
+    chdir: "{{ solana_repo_dir.path }}"
+
+- name: Set solana binaries directory
+  set_fact:
+    solana_bin: "{{ solana_repo_dir.path }}/target/{{ solana_build_profile }}"

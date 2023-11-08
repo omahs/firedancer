@@ -1,7 +1,44 @@
+# TODO: install the dependency if the assert fails instead of exiting
+
 # Check linux kernel version >= 5.7
+- name: Get linux kernel version
+  shell: uname -r | cut -d '-' -f1
+  register: kernel
 
-# Check gcc >= 8.3, otherwise go install deps
+- name: Check if minimum kernel version requirement is met
+  assert:
+    that:
+      - "'{{ kernel.stdout }}' is version('{{ fd_kernel_min }}', '>=')"
 
-# Check rust available, otherwise go install deps
+- name: Get installed pacakges information
+  package_facts:
+    manager: auto
 
-# Check clang and make available, otherwise go install deps
+# Check gcc, clang and make available
+- name: Check that gcc, clang and cmake are installed
+  assert:
+    that:
+      - "'gcc' in ansible_facts.packages"
+      - "'clang' in ansible_facts.packages"
+      - "'make' in ansible_facts.packages"
+
+# Check gcc >= 8.3
+- name: Check that gcc minimum version requirement is met
+  assert:
+    that:
+      - "'{{ ansible_facts.packages.gcc[0].version }}' is version('{{ fd_gcc_min }}', '>=')"
+
+# Check rust available
+- name: Get contents of cargo/bin directory
+  stat:
+    path: "{{ lookup('env', 'HOME') }}/.cargo/bin/{{ item }}"
+  loop:
+    - cargo
+    - rustc
+  register: rust
+
+- name: Check if rust binaries exist
+  assert:
+    that:
+      - item.stat.exists
+  loop: "{{ rust.results }}"

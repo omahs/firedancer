@@ -1,7 +1,26 @@
 # Generate temporary directory for clone
+- name: Create temporary directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: fd_repo_
+  register: fd_repo_dir
 
 # Clone git repo at desired tag/branch and recurse submodules
+- name: Clone repository
+  git:
+    repo: "{{ fd_repo }}"
+    dest: "{{ fd_repo_dir.path }}"
+    version: "{{ fd_repo_version }}"
+    recursive: true
+    force: true
+    depth: 1
 
-# FD_AUTO_INSTALL_PACKAGES=1 ./deps.sh check install
+- name: Build firedancer
+  script:
+    cmd: "files/fd_build.sh {{ fd_machine }} {{ fd_build_targets }}"
+    chdir: "{{ fd_repo_dir.path }}"
 
-# make -j fdctl solana
+# TODO: Map MACHINE to build directory correctly
+- name: Set fd binaries directory
+  set_fact:
+    fd_bin: "{{ fd_repo_dir.path }}/build/native/gcc/bin"

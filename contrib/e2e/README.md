@@ -18,3 +18,16 @@ you want to use a different ansible user, specify that with `-u <USER>` to the
 ```
 ansible-playbook -i inventory/custom.yml playbooks/build.yml -u <USER>
 ```
+
+## Roles
+
+- Build fd binaries
+- Build solana binaries
+- Distribute binaries
+- Genesis for new cluster
+- Bootstrap fd validator
+- Bootstrap solana validator
+- Join fd validator
+- Join solana validator
+- Teardown fd validator
+- Teardown solana validator
