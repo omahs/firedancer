@@ -1,7 +1,6 @@
 ---
-
 fd_kernel_min: 4.18
 fd_gcc_min: 8.3
 fd_repo_version: "main"
 
-solana_repo_version: "v1.17.4"
+labs_repo_version: "v1.17.4"

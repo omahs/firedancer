@@ -15,12 +15,11 @@
     force: true
     depth: 1
 
-- name: Build firedancer
+- name: Install dependencies and build firedancer
   script:
     cmd: "files/fd_build.sh {{ fd_machine }} {{ fd_build_targets }}"
     chdir: "{{ fd_repo_dir.path }}"
 
-# TODO: Map MACHINE to build directory correctly
 - name: Set fd binaries directory
   set_fact:
-    fd_bin: "{{ fd_repo_dir.path }}/build/native/gcc/bin"
+    fd_bin: "{{ fd_repo_dir.path }}/build/{{ fd_machine }}/gcc/bin"

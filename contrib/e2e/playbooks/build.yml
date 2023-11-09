@@ -1,8 +1,7 @@
 ---
-
 - name: Build firedancer binaries
-  hosts: build
+  hosts: build_fd:build_labs
   gather_facts: no
   become: no
   roles:
-  - roles/build
+    - roles/build

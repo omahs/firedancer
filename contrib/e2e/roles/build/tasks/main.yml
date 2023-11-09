@@ -1,5 +1,4 @@
 ---
-
 # Check asserts
 - name: Check build pre-requisites
   import_tasks: asserts.yml
@@ -9,15 +8,15 @@
   import_tasks: dependencies.yml
   when: install_deps is True
 
-# TODO: different labs and fd build hosts
-
 # Build firedancer
 - name: Build firedancer binaries
   import_tasks: fd_build.yml
+  when: inventory_hostname in groups['build_fd']
 
 # Build solana
 - name: Build solana binaries
   import_tasks: labs_build.yml
+  when: inventory_hostname in groups['build_labs']
 
 # Distribute firedancer and solana binaries
 - name: Distribute firedancer and solana binaries
