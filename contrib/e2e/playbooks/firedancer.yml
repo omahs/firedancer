@@ -1,0 +1,7 @@
+---
+- name: Setup firedancer on hosts
+  hosts: run_fd
+  gather_facts: no
+  become: no
+  roles:
+    - roles/firedancer

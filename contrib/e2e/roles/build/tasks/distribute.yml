@@ -1,30 +1,26 @@
 ---
-- name: Create distribution working directory
-  hosts: all
-  tasks:
-    - name: Create fd working directory
-      ansible.builtin.file:
-        path: "{{ fd_workdir }}"
-        state: directory
+# Create distribution working directory
+- name: Create fd working directory
+  ansible.builtin.file:
+    path: "{{ fd_workdir }}"
+    state: directory
 
-    - name: Create labs working directory
-      ansible.builtin.file:
-        path: "{{ labs_workdir }}"
-        state: directory
+- name: Create labs working directory
+  ansible.builtin.file:
+    path: "{{ labs_workdir }}"
+    state: directory
 
-- name: Copy fd and labs binaries from their build hosts to all hosts
-  hosts: all
-  tasks:
-    - name: Copy fd_bin binary from build_fd host
-      copy:
-        src: "{{ fd_bin }}"
-        dest: "{{ fd_workdir }}"
-      delegate_to: build_fd
-      run_once: true
+# Copy fd and labs binaries from their build hosts to all hosts
+- name: Copy fd_bin binary from build_fd host
+  copy:
+    src: "{{ fd_bin }}"
+    dest: "{{ fd_workdir }}"
+  delegate_to: build_fd
+  run_once: true
 
-    - name: Copy labs_bin binary from build_labs host
-      copy:
-        src: "{{ labs_bin }}"
-        dest: "{{ labs_workdir }}"
-      delegate_to: build_labs
-      run_once: true
+- name: Copy labs_bin binary from build_labs host
+  copy:
+    src: "{{ labs_bin }}"
+    dest: "{{ labs_workdir }}"
+  delegate_to: build_labs
+  run_once: true

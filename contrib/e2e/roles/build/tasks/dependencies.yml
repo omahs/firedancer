@@ -7,25 +7,23 @@
 # install clang and make latest
 
 ---
-- name: Install latest versions of build tools
-  tasks:
-    - name: Install Rust
-      command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-      environment:
-        RUSTUP_HOME: "{{ lookup('env', 'HOME') }}/.rustup"
-        CARGO_HOME: "{{ lookup('env', 'HOME') }}/.cargo"
+- name: Install Rust
+  command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  environment:
+    RUSTUP_HOME: "{{ lookup('env', 'HOME') }}/.rustup"
+    CARGO_HOME: "{{ lookup('env', 'HOME') }}/.cargo"
 
-    - name: Install GCC
-      package:
-        name: gcc
-        state: latest
+- name: Install GCC
+  package:
+    name: gcc
+    state: latest
 
-    - name: Install Clang
-      package:
-        name: clang
-        state: latest
+- name: Install Clang
+  package:
+    name: clang
+    state: latest
 
-    - name: Install Make
-      package:
-        name: make
-        state: latest
+- name: Install Make
+  package:
+    name: make
+    state: latest

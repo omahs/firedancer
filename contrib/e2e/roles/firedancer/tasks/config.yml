@@ -1,19 +1,16 @@
 ---
-- name: Setup config
-  hosts: run_fd
-  tasks:
-    - name: Create config directory
-      ansible.builtin.file:
-        state: directory
-        group: "{{ fd_user }}"
-        owner: "{{ fd_user }}"
-        mode: 0755
-        dest: "{{ fd_config_dir }}"
+- name: Create config directory
+  ansible.builtin.file:
+    state: directory
+    group: "{{ fd_user }}"
+    owner: "{{ fd_user }}"
+    mode: 0755
+    dest: "{{ fd_config_dir }}"
 
-    - name: Copy the config file
-      ansible.builtin.template:
-        src: fd_config.toml.j2
-        dest: "{{ fd_config_dir }}/{{ fd_config_file }}"
-        owner: "{{ fd_user }}"
-        group: "{{ fd_user }}"
-        mode: 0644
+- name: Copy the config file
+  ansible.builtin.template:
+    src: fd_config.toml.j2
+    dest: "{{ fd_config_dir }}/{{ fd_config_file }}"
+    owner: "{{ fd_user }}"
+    group: "{{ fd_user }}"
+    mode: 0644

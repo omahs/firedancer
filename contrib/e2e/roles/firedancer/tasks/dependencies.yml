@@ -1,17 +1,13 @@
 ---
-- name: Ensure systemd is installed
-  hosts: run_fd
+- name: Check if systemd is installed
+  ansible.builtin.command:
+    cmd: "systemctl --version"
+  register: systemd_check
+  ignore_errors: true
+  changed_when: false
 
-  tasks:
-    - name: Check if systemd is installed
-      ansible.builtin.command:
-        cmd: "systemctl --version"
-      register: systemd_check
-      ignore_errors: true
-      changed_when: false
-
-    - name: Install systemd if not present
-      ansible.builtin.package:
-        name: systemd
-        state: present
-      when: systemd_check.rc != 0
+- name: Install systemd if not present
+  ansible.builtin.package:
+    name: systemd
+    state: present
+  when: systemd_check.rc != 0
