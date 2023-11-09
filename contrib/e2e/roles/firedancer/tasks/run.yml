@@ -1,0 +1,22 @@
+---
+- name: Run firedancer service
+  hosts: run_fd
+  become: yes
+  tasks:
+    - name: Copy the systemd service template to the appropriate location
+      ansible.builtin.template:
+        src: fd_run.service.j2
+        dest: /etc/systemd/system/fd_run.service
+      notify: Restart firedancer run service
+
+    - name: Start and enable the Firedancer Run Service
+      ansible.builtin.service:
+        name: fd_run.service
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Restart firedancer run service
+      ansible.builtin.service:
+        name: fd_run.service
+        state: restarted

@@ -1,0 +1,25 @@
+---
+# Run the configure command when the system boots,
+# each time before the validator is started,
+# and whenever the configuration file changes
+- name: Deploy and enable Firedancer Configure Service
+  hosts: run_fd
+  become: yes
+  tasks:
+    - name: Copy the systemd service template to the appropriate location
+      ansible.builtin.template:
+        src: fd_configure.service.j2
+        dest: /etc/systemd/system/fd_configure.service
+      notify: Restart firedancer configure service
+
+    - name: Start and enable the Firedancer Configure Service
+      ansible.builtin.service:
+        name: fd_configure.service
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Restart firedancer configure service
+      ansible.builtin.service:
+        name: fd_configure.service
+        state: restarted

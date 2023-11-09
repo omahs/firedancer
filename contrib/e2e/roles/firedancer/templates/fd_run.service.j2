@@ -1,0 +1,10 @@
+[Unit]
+Description=Firedancer Run Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c "sudo {{ fd_workdir }}/{{ fd_bin }} run --config {{ fd_config_dir }}/{{ fd_config_file }}"
+
+[Install]
+WantedBy=multi-user.target

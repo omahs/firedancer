@@ -1,0 +1,18 @@
+user = "{{ fd_user }}"
+
+[gossip]
+    entrypoints = [
+{% for entrypoint in solana_entrypoints %}
+      {{ entrypoint }},
+{% endfor %}
+    ]
+
+[consensus]
+    identity_path = "{{ fd_identity_keypair }}"
+    vote_account_path = "{{ fd_vote_keypair }}"
+
+    known_validators = [
+{% for val in solana_validators %}
+      {{ val }},
+{% endfor %}
+    ]

@@ -1,0 +1,8 @@
+---
+fd_gossip_port: 9010
+fd_bin: fdctl
+fd_config_dir: "{{ fd_workdir }}/config"
+fd_config_file: "fd_config.toml"
+fd_user:
+fd_identity_keypair:
+fd_vote_keypair:
