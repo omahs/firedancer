@@ -1,0 +1,12 @@
+---
+- name: Install dependencies
+  import_tasks: dependencies.yml
+
+- name: Creating mint and stake authority key and keys for bootstrap validator
+  import_tasks: keygen.yml
+
+- name: Run genesis
+  import_tasks: genesis.yml
+
+- name: Run the bootstrap validator
+  import_tasks: run.yml

@@ -1,0 +1,4 @@
+---
+- name: Set ulimit
+  ansible.builtin.command:
+    cmd: "ulimit -n 1000000"

@@ -1,0 +1,13 @@
+---
+labs_keys_dir: "{{labs_workdir}}/keys"
+labs_genesis_cfg: "{{labs_workdir}}/genesis.cfg"
+labs_ledger: "{{labs_workdir}}/ledger"
+labs_faucet: "{{labs_keys_dir}}/faucet.json"
+labs_authority: "{{labs_keys_dir}}/authority.json"
+labs_bootstrap_validator_lamports: 10000000000
+labs_bootstrap_validator_stake_lamports: 32282880
+labs_fauct_lamports: 5000000000000000
+labs_snapshot_interval: 200
+labs_ledger_size: 100000000
+labs_port_start: 8000
+labs_port_end: 8100

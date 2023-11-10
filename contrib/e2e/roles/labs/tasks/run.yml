@@ -1,0 +1,48 @@
+---
+- name: Set solana validator binary
+  set_fact:
+    labs_validator: "{{ labs_workdir }}/solana-validator"
+
+- name: Set epoch-info
+  set_fact:
+    labs_epoch: "{{ labs_workdir }}/solana -ul epoch-info"
+
+- name: Generate Genesis
+  command: >
+    {{ labs_validator }} 
+    --identity {{ labs_keys_dir }}/id.json 
+    --ledger {{ labs_ledger }} 
+    --limit-ledger-size {{ labs_ledger_size }}
+    --dynamic-port-range {{ labs_port_start }}-}{{ labs_port_end }}
+    --no-genesis-fetch 
+    --no-snapshot-fetch 
+    --no-poh-speed-test 
+    --no-os-network-limits-test 
+    --vote-account $({{ labs_keygen }} pubkey {{ labs_keys_dir }}/vote.json) 
+    --expected-shred-version {{ shred_version }} 
+    --expected-genesis-hash {{ genesis_hash }} 
+    --no-wait-for-vote-to-start-leader 
+    --incremental-snapshots 
+    --full-snapshot-interval-slots {{ labs_snapshot_interval }} 
+    --rpc-port {{ labs_rpc_port }} 
+    --gossip-port {{ labs_gossip_port }} 
+    --gossip-host {{ labs_gossip_host }} 
+    --full-rpc-api 
+    --tpu-disable-quic 
+    --tpu-enable-udp 
+    --log {{ labs_ledger }}/validator.log
+  async: 0
+  poll: -1
+  register: validator_output
+
+- name: Print Validator PID
+  debug:
+    var: validator_output.pid
+  when: validator_output.rc == 0
+
+- name: Wait for snapshot
+  command: "{{ labs_epoch }} || true | grep -o -P '(?<=Slot:).*(?=Epoch:)' | xargs"
+  register: slot
+  until: slot_value.stdout | int > {{ labs_snapshot_interval }}
+  retries: 100
+  delay: 2
