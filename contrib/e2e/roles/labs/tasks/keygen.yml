@@ -9,31 +9,31 @@
     state: directory
 
 - name: Create mint and staking faucet
-  command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ labs_faucet }} > /dev/null"
+  command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ labs_faucet }}"
   args:
-    creates: "{{ faucet }}"
+    creates: "{{ labs_faucet }}"
 
 - name: Create mint and staking authority keys
-  command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ labs_authority }} > /dev/null"
+  command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ labs_authority }}"
   args:
-    creates: "{{ authority }}"
+    creates: "{{ labs_authority }}"
 
 - name: Create bootstrap validator id keys
-  command: "{{ labs_keygen }} new --no-bip39-passphrase -o '{{ labs_keys_dir }}/id.json' > '{{ labs_keys_dir }}/id.seed'"
+  shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/id.json > {{ labs_keys_dir }}/id.seed"
   args:
     creates:
       - "{{ labs_keys_dir }}/id.json"
       - "{{ labs_keys_dir }}/id.seed"
 
 - name: Create bootstrap validator vote keys
-  command: "{{ labs_keygen }} new --no-bip39-passphrase -o '{{ labs_keys_dir }}/vote.json' > '{{ labs_keys_dir }}/vote.seed'"
+  shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/vote.json > {{ labs_keys_dir }}/vote.seed"
   args:
     creates:
       - "{{ labs_keys_dir }}/vote.json"
       - "{{ labs_keys_dir }}/vote.seed"
 
 - name: Create bootstrap validator stake keys
-  command: "{{ labs_keygen }} new --no-bip39-passphrase -o '{{ labs_keys_dir }}/stake.json' > '{{ labs_keys_dir }}/stake.seed'"
+  shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/stake.json > {{ labs_keys_dir }}/stake.seed"
   args:
     creates:
       - "{{ labs_keys_dir }}/stake.json"

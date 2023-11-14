@@ -1,12 +1,11 @@
 ---
-- name: Copy the systemd service template to the appropriate location
+# Run the configure command when the system boots,
+# each time before the validator is started,
+# and whenever the configuration file changes
+- name: Copy firedancer service template to the appropriate location
   ansible.builtin.template:
-    src: fd_run.service.j2
-    dest: /etc/systemd/system/fd_run.service
-  notify: Restart firedancer run service
-
-- name: Start and enable the Firedancer Run Service
-  ansible.builtin.service:
-    name: fd_run.service
-    enabled: yes
-    state: started
+    src: firedancer.service.j2
+    dest: /etc/systemd/system/firedancer.service
+  become: yes
+  notify:
+    - Restart Firedancer

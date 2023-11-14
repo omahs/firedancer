@@ -1,9 +1,5 @@
-- name: Restart firedancer configure service
-  ansible.builtin.service:
-    name: fd_configure.service
-    state: restarted
-
-- name: Restart firedancer run service
-  ansible.builtin.service:
-    name: fd_run.service
+---
+- name: Restart Firedancer
+  ansible.builtin.systemd:
+    name: firedancer.service
     state: restarted

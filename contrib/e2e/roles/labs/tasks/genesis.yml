@@ -3,6 +3,10 @@
   set_fact:
     labs_genesis: "{{ labs_workdir }}/solana-genesis"
 
+- name: Set labs_gossip_host
+  set_fact: 
+    labs_gossip_host: "{{ inventory_hostname }}"
+
 - name: Generate Genesis
   command: >
     {{ labs_genesis }}
@@ -14,34 +18,43 @@
     --bootstrap-validator-lamports {{ labs_bootstrap_validator_lamports }}
     --bootstrap-validator-stake-lamports {{ labs_bootstrap_validator_stake_lamports }}
     --faucet-pubkey {{ labs_faucet }}
-    --faucet-lamports {{ labs_fauct_lamports }}
+    --faucet-lamports {{ labs_faucet_lamports }}
   register: genesis_output
 
+- name: Display Genesis Output
+  debug:
+    var: genesis_output.stdout
+    
 - name: Extract Genesis Hash
   set_fact:
-    genesis_hash: "{{ genesis_output.stdout | regex_search('(?<=Genesis hash:).*(?=Shred version:)') | trim }}"
+    genesis_hash: "{{ genesis_output.stdout | regex_search('Genesis hash: (.+?)\\n', '\\1') | first | trim }} "
   failed_when: genesis_hash is not defined
+
+- name: Display Genesis Hash
+  debug:
+    var: genesis_hash
 
 - name: Extract Shred Version
   set_fact:
-    shred_version: "{{ genesis_output.stdout | regex_search('(?<=Shred version:).*(?=Ticks per slot:)') | trim }}"
+    shred_version: "{{ genesis_output.stdout | regex_search('Shred version: (.+?)\\n', '\\1') | first | trim }} "
   failed_when: shred_version is not defined
 
-- name: Flush and create genesis cfg
-  command: rm -rf "{{ labs_genesis_cfg }}" && touch "{{ labs_genesis_cfg }}"
+- name: Display Shred Version
+  debug:
+    var: shred_version
 
 - name: Write genesis hash to genesis cfg
-  command: echo "GENESIS_HASH={{ genesis_hash }}" > "{{ labs_genesis_cfg }}"
+  command: echo "GENESIS_HASH={{ genesis_hash }}" > {{ labs_genesis_cfg }}
   when: genesis_hash is defined
 
 - name: Write shred version to genesis cfg
-  command: echo "SHRED_VERSION={{ shred_version }}" >> "{{ labs_genesis_cfg }}"
+  command: echo "SHRED_VERSION={{ shred_version }}" >> {{ labs_genesis_cfg }}
   when: shred_version is defined
 
 - name: Write RPC endpoint to genesis cfg
-  command: echo "RPC_ENDPOINT={{ labs_gossip_host }}:{{ labs_rpc_port }}" >> "{{ labs_genesis_cfg }}"
+  command: echo "RPC_ENDPOINT={{ labs_gossip_host }}:{{ labs_rpc_port }}" >> {{ labs_genesis_cfg }}
   when: labs_gossip_host is defined and labs_rpc_port is defined
 
 - name: Write solana entrypoint to genesis cfg
-  command: echo "SOLANA_ENTRYPOINT={{ labs_gossip_host }}:{{ labs_gossip_port }}" >> "{{ labs_genesis_cfg }}"
+  command: echo "SOLANA_ENTRYPOINT={{ labs_gossip_host }}:{{ labs_gossip_port }}" >> {{ labs_genesis_cfg }}
   when: labs_gossip_host is defined and labs_gossip_port is defined

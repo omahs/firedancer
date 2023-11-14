@@ -1,0 +1,14 @@
+[Unit]
+Description=Firedancer node
+After=network.target
+
+[Service]
+User=firedancer
+Group=firedancer
+ExecStart={{ fd_workdir }}/{{ fd_bin }} configure init all --config {{ fd_config_dir }}/{{ fd_config_file }} && {{ fd_workdir }}/{{ fd_bin }} run --config {{ fd_config_dir }}/{{ fd_config_file }} 
+ExecStop={{ fd_workdir }}/{{ fd_bin }} configure fini all --config {{ fd_config_dir }}/{{ fd_config_file }} 
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

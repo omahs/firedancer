@@ -4,6 +4,7 @@
 
 - name: Creating mint and stake authority key and keys for bootstrap validator
   import_tasks: keygen.yml
+  when: override_keygen | default(false)
 
 - name: Run genesis
   import_tasks: genesis.yml
