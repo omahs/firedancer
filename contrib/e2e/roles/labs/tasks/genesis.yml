@@ -7,7 +7,7 @@
 - name: Generate Genesis
   ansible.builtin.command: >
     {{ labs_genesis }}
-    --cluster-type mainnet-beta
+    --cluster-type {{ cluster_type }}
     --ledger {{ labs_ledger }}
     --enable-warmup-epochs
     --bootstrap-validator "{{ labs_keys_dir }}/id.json" "{{ labs_keys_dir }}/vote.json" "{{ labs_keys_dir }}/stake.json"

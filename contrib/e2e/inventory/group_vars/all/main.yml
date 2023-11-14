@@ -1,0 +1,6 @@
+---
+e2e_workdir: "~/fd_e2e"
+
+# software versions
+labs_repo_version: "v1.17.4"
+fd_repo_version: "main"

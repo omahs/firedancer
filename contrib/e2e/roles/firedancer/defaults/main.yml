@@ -1,8 +1,10 @@
 ---
+fd_workdir: "{{ e2e_workdir }}/firedancer/{{ fd_repo_version }}"
+
 fd_bin: fdctl
 fd_config_dir: "{{ fd_workdir }}/config"
 fd_config_file: "fd_config.toml"
-# todo define these or pass them as vars on the cmd line
+# TODO: define these or pass them as vars on the cmd line
 fd_user: firedancer
 fd_identity_keypair:
 fd_vote_keypair:

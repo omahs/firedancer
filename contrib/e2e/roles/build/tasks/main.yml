@@ -28,7 +28,7 @@
   - name: Distribute firedancer binaries
     ansible.builtin.import_tasks: distribute.yml
     vars:
-      workdir: "{{ fd_workdir }}/firedancer/{{ fd_repo_version }}"
+      workdir: "{{ e2e_workdir }}/firedancer/{{ fd_repo_version }}"
       bin: "{{ hostvars[fd_build_host].fd_bin }}"
       build_host: "{{ fd_build_host }}"
       run_group: "fd_run"
@@ -45,7 +45,7 @@
   - name: Distribute solana binaries
     ansible.builtin.import_tasks: distribute.yml
     vars:
-      workdir: "{{ fd_workdir }}/solana/{{ labs_repo_version }}"
+      workdir: "{{ e2e_workdir }}/solana/{{ labs_repo_version }}"
       bin: "{{ hostvars[labs_build_host].labs_bin }}"
       build_host: "{{ labs_build_host }}"
       run_group: "labs_run"

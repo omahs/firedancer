@@ -8,33 +8,21 @@
     path: "{{ labs_keys_dir }}"
     state: directory
 
-- name: Create mint and staking faucet
-  ansible.builtin.command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ labs_faucet }}"
+- name: Create mint key and staking authority
+  ansible.builtin.command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ item }}"
   args:
-    creates: "{{ labs_faucet }}"
+    creates: "{{ item }}"
+  loop:
+  - "{{ labs_faucet }}"
+  - "{{ labs_authority }}"
 
-- name: Create mint and staking authority keys
-  ansible.builtin.command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ labs_authority }}"
-  args:
-    creates: "{{ labs_authority }}"
-
-- name: Create bootstrap validator id keys
-  ansible.builtin.shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/id.json > {{ labs_keys_dir }}/id.seed"
+- name: Create bootstrap validator keys
+  ansible.builtin.shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/{{ item }}.json > {{ labs_keys_dir }}/{{ item }}.seed"
   args:
     creates:
-      - "{{ labs_keys_dir }}/id.json"
-      - "{{ labs_keys_dir }}/id.seed"
-
-- name: Create bootstrap validator vote keys
-  ansible.builtin.shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/vote.json > {{ labs_keys_dir }}/vote.seed"
-  args:
-    creates:
-      - "{{ labs_keys_dir }}/vote.json"
-      - "{{ labs_keys_dir }}/vote.seed"
-
-- name: Create bootstrap validator stake keys
-  ansible.builtin.shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/stake.json > {{ labs_keys_dir }}/stake.seed"
-  args:
-    creates:
-      - "{{ labs_keys_dir }}/stake.json"
-      - "{{ labs_keys_dir }}/stake.seed"
+      - "{{ labs_keys_dir }}/{{ item }}.json"
+      - "{{ labs_keys_dir }}/{{ item }}.seed"
+  loop:
+  - "id"
+  - "vote"
+  - "stake"
