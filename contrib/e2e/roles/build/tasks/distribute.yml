@@ -1,30 +1,49 @@
 ---
-# Create distribution working directory
-- name: Create fd working directory
+- name: Create temporary directory
   ansible.builtin.file:
-    path: "{{ fd_workdir }}"
     state: directory
-  delegate_to: run_fd
-
-- name: Create labs working directory
-  ansible.builtin.file:
-    path: "{{ labs_workdir }}"
-    state: directory
-  delegate_to: run_labs
-
-# Copy fd and labs binaries from their build hosts to all hosts
-- name: Copy fd_bin binary from build_fd host
-  ansible.posix.synchronize:
-    src: "{{ fd_bin }}"
-    dest: "{{ fd_workdir }}"
-    mode: pull
-  delegate_to: run_fd
+    path: "~/.fd_e2e_bin_tmp"
+  register: fd_e2e_bin
+  delegate_to: localhost
   run_once: true
 
-- name: Copy labs_bin binary from build_labs host
-  ansible.posix.synchronize:
-    src: "{{ labs_bin }}"
-    dest: "{{ labs_workdir }}"
+# Create distribution working directory
+- name: Create working directory
+  ansible.builtin.file:
+    path: "{{ workdir }}"
+    state: directory
+  when: inventory_hostname in groups[run_group]
+
+# Copy binaries from build hosts to run hosts
+- name: Fetch binaries from build host
+  synchronize:
+    src: "{{ bin }}/"
+    dest: "{{ fd_e2e_bin.path }}/"
     mode: pull
-  delegate_to: run_labs
+    recursive: false
+    rsync_opts:
+      - "--exclude='*.d'"
+      - "--exclude='*.rlib'"
+      - "--exclude='*.so'"
+  when: inventory_hostname == build_host
+  delegate_to: localhost
+
+- name: Copy binary from build host
+  synchronize:
+    src: "{{ fd_e2e_bin.path }}/"
+    dest: "{{ workdir }}/"
+    checksum: true
+    recursive: false
+    rsync_opts:
+      - "--exclude='*.d'"
+      - "--exclude='*.rlib'"
+      - "--exclude='*.so'"
+  when: inventory_hostname in groups[run_group]
+  delegate_to: localhost
+
+- name: Delete temporary directory
+  file:
+    path: "{{ fd_e2e_bin.path }}"
+    state: absent
+  delegate_to: localhost
   run_once: true

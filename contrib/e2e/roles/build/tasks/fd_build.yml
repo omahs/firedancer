@@ -22,4 +22,4 @@
 
 - name: Set fd binaries directory
   set_fact:
-    fd_bin: "{{ fd_repo_dir.path }}/build/{{ fd_machine }}/gcc/obj"
+    fd_bin: "{{ fd_repo_dir.path }}/build/{{ fd_machine }}/gcc/bin"

@@ -1,29 +1,18 @@
-# install rust latest
-
-# detect package manager and use that to install
-
-# install gcc latest
-
-# install clang and make latest
-
 ---
+# Install rust latest
 - name: Install Rust
-  command: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
   environment:
     RUSTUP_HOME: "{{ lookup('env', 'HOME') }}/.rustup"
     CARGO_HOME: "{{ lookup('env', 'HOME') }}/.cargo"
 
-- name: Install GCC
+# Install gcc, clang and make latest
+- name: Install compiler tools
+  become: yes
   package:
-    name: gcc
+    name: "{{ item }}"
     state: latest
-
-- name: Install Clang
-  package:
-    name: clang
-    state: latest
-
-- name: Install Make
-  package:
-    name: make
-    state: latest
+  loop:
+    - gcc
+    - clang
+    - make

@@ -1,23 +1,65 @@
 ---
+# TODO: Skip build if binaries for repo_version already exists
+
+- name: Set build hosts
+  set_fact:
+    fd_build_host: "{{ groups['fd_build'][0] }}"
+    labs_build_host: "{{ groups['labs_build'][0] }}"
+
+# Install dependencies
+- name: Install dependencies if missing
+  import_tasks: dependencies.yml
+  when: inventory_hostname in [fd_build_host, labs_build_host]
+
 # Check asserts
 - name: Check build pre-requisites
   import_tasks: asserts.yml
+  when: inventory_hostname in [fd_build_host, labs_build_host]
 
-# Install dependencies if required
-- name: Install dependencies if missing
-  import_tasks: dependencies.yml
-  when: install_deps is True
+- name: Build and distribute firedancer binaries
+  block:
+  # Build firedancer
+  - name: Build firedancer binaries
+    import_tasks: fd_build.yml
+    when:
+    - inventory_hostname == fd_build_host
 
-# Build firedancer
-- name: Build firedancer binaries
-  import_tasks: fd_build.yml
-  when: inventory_hostname in groups['build_fd']
+  # Distribute firedancer binaries
+  - name: Distribute firedancer binaries
+    import_tasks: distribute.yml
+    vars:
+      workdir: "{{ fd_workdir }}/firedancer/{{ fd_repo_version }}"
+      bin: "{{ hostvars[fd_build_host].fd_bin }}"
+      build_host: "{{ fd_build_host }}"
+      run_group: "fd_run"
+  when: build_fd
 
-# Build solana
-- name: Build solana binaries
-  import_tasks: labs_build.yml
-  when: inventory_hostname in groups['build_labs']
+- name: Build and distribute solana binaries
+  block:
+  # Build solana
+  - name: Build solana binaries
+    import_tasks: labs_build.yml
+    when: inventory_hostname == labs_build_host
 
-# Distribute firedancer and solana binaries
-- name: Distribute firedancer and solana binaries
-  import_tasks: distribute.yml
+  # Distribute solana binaries
+  - name: Distribute solana binaries
+    import_tasks: distribute.yml
+    vars:
+      workdir: "{{ fd_workdir }}/solana/{{ labs_repo_version }}"
+      bin: "{{ hostvars[labs_build_host].labs_bin }}"
+      build_host: "{{ labs_build_host }}"
+      run_group: "labs_run"
+  when: build_labs
+
+# Cleanup repo clones
+- name: Delete fd repo directory
+  file:
+    path: "{{ hostvars[fd_build_host].fd_repo_dir }}"
+    state: absent
+  delegate_to: "{{ fd_build_host }}"
+
+- name: Delete labs directory
+  file:
+    path: "{{ hostvars[labs_build_host].labs_repo_dir }}"
+    state: absent
+  delegate_to: "{{ labs_build_host }}"
