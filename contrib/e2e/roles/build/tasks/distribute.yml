@@ -4,23 +4,27 @@
   ansible.builtin.file:
     path: "{{ fd_workdir }}"
     state: directory
+  delegate_to: run_fd
 
 - name: Create labs working directory
   ansible.builtin.file:
     path: "{{ labs_workdir }}"
     state: directory
+  delegate_to: run_labs
 
 # Copy fd and labs binaries from their build hosts to all hosts
 - name: Copy fd_bin binary from build_fd host
-  copy:
+  ansible.posix.synchronize:
     src: "{{ fd_bin }}"
     dest: "{{ fd_workdir }}"
-  delegate_to: build_fd
+    mode: pull
+  delegate_to: run_fd
   run_once: true
 
 - name: Copy labs_bin binary from build_labs host
-  copy:
+  ansible.posix.synchronize:
     src: "{{ labs_bin }}"
     dest: "{{ labs_workdir }}"
-  delegate_to: build_labs
+    mode: pull
+  delegate_to: run_labs
   run_once: true
