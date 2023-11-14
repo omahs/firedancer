@@ -16,7 +16,7 @@
 
 # Copy binaries from build hosts to run hosts
 - name: Fetch binaries from build host
-  synchronize:
+  ansible.posix.synchronize:
     src: "{{ bin }}/"
     dest: "{{ fd_e2e_bin.path }}/"
     mode: pull
@@ -29,7 +29,7 @@
   delegate_to: localhost
 
 - name: Copy binary from build host
-  synchronize:
+  ansible.posix.ssynchronize:
     src: "{{ fd_e2e_bin.path }}/"
     dest: "{{ workdir }}/"
     checksum: true
@@ -42,7 +42,7 @@
   delegate_to: localhost
 
 - name: Delete temporary directory
-  file:
+  ansible.builtin.file:
     path: "{{ fd_e2e_bin.path }}"
     state: absent
   delegate_to: localhost

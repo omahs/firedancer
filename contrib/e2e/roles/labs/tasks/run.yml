@@ -1,30 +1,27 @@
 ---
-- name: Set solana validator binary
-  set_fact:
+- name: Set solana validator and epoch info commands
+  ansible.builtin.set_fact:
     labs_validator: "{{ labs_workdir }}/solana-validator"
-
-- name: Set epoch-info
-  set_fact:
     labs_epoch_cmd: "{{ labs_workdir }}/solana -ul epoch-info"
 
 - name: Display epoch-info
-  debug:
+  ansible.builtin.debug:
     var: labs_epoch_cmd
 
 - name: Get vote account public key
-  command: "{{ labs_workdir }}/solana-keygen pubkey {{ labs_keys_dir }}/vote.json"
+  ansible.builtin.command: "{{ labs_workdir }}/solana-keygen pubkey {{ labs_keys_dir }}/vote.json"
   register: vote_account_result
 
 - name: Set vote_account
-  set_fact:
+  ansible.builtin.set_fact:
     vote_account: "{{ vote_account_result.stdout }}"
 
 - name: Display vote_account
-  debug:
+  ansible.builtin.debug:
     var: vote_account
 
 - name: Run Genesis
-  command: >
+  ansible.builtin.command: >
     {{ labs_validator }} 
     --identity {{ labs_keys_dir }}/id.json 
     --ledger {{ labs_ledger }} 
@@ -52,12 +49,12 @@
   register: validator_output
 
 - name: Print Validator PID
-  debug:
+  ansible.builtin.debug:
     var: validator_output.pid
   when: validator_output.rc == 0
 
 - name: Wait for snapshot
-  command: "{{ labs_epoch_cmd }} || true | grep -o -P '(?<=Slot:).*(?=Epoch:)' | xargs"
+  ansible.builtin.shell: "{{ labs_epoch_cmd }} || true | grep -o -P '(?<=Slot:).*(?=Epoch:)' | xargs"
   register: slot
   until: slot_value.stdout | int > {{ labs_snapshot_interval }}
   retries: 100

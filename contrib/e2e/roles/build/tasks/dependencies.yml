@@ -1,7 +1,7 @@
 ---
 # Install rust latest
 - name: Install Rust
-  shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  ansible.builtin.shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
   environment:
     RUSTUP_HOME: "{{ lookup('env', 'HOME') }}/.rustup"
     CARGO_HOME: "{{ lookup('env', 'HOME') }}/.cargo"
@@ -9,7 +9,7 @@
 # Install gcc, clang and make latest
 - name: Install compiler tools
   become: yes
-  package:
+  ansible.builtin.package:
     name: "{{ item }}"
     state: latest
   loop:

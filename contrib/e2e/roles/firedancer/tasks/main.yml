@@ -1,12 +1,12 @@
 ---
 # Check that dependencies are installed
 - name: Check dependencies
-  import_tasks: dependencies.yml
+  ansible.builtin.import_tasks: dependencies.yml
 
 # Import the templated config file
 - name: Import configuration
-  import_tasks: config.yml
+  ansible.builtin.import_tasks: config.yml
 
 # Run firedancer
 - name: Run firedancer
-  import_tasks: run.yml
+  ansible.builtin.import_tasks: run.yml

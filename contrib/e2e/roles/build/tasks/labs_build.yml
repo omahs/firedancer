@@ -7,7 +7,7 @@
 
 # Clone git repo at desired tag/branch
 - name: Clone repository
-  git:
+  ansible.builtin.git:
     repo: "{{ labs_repo }}"
     dest: "{{ labs_repo_dir.path }}"
     version: "{{ labs_repo_version }}"
@@ -17,10 +17,10 @@
 # TODO: Install solana dependencies
 
 - name: Build Solana Labs
-  script:
+  ansible.builtin.script:
     cmd: "files/labs_build.sh --{{ labs_build_profile }} {{ labs_build_targets }}"
     chdir: "{{ labs_repo_dir.path }}"
 
 - name: Set solana labs binaries directory
-  set_fact:
+  ansible.builtin.set_fact:
     labs_bin: "{{ labs_repo_dir.path }}/target/{{ labs_build_profile }}"

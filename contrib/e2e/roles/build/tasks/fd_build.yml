@@ -7,7 +7,7 @@
 
 # Clone git repo at desired tag/branch and recurse submodules
 - name: Clone repository
-  git:
+  ansible.builtin.git:
     repo: "{{ fd_repo }}"
     dest: "{{ fd_repo_dir.path }}"
     version: "{{ fd_repo_version }}"
@@ -16,10 +16,10 @@
     depth: 1
 
 - name: Install dependencies and build firedancer
-  script:
+  ansible.builtin.script:
     cmd: "files/fd_build.sh {{ fd_machine }} {{ fd_build_targets }}"
     chdir: "{{ fd_repo_dir.path }}"
 
 - name: Set fd binaries directory
-  set_fact:
+  ansible.builtin.set_fact:
     fd_bin: "{{ fd_repo_dir.path }}/build/{{ fd_machine }}/gcc/bin"

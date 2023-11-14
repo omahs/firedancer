@@ -2,21 +2,21 @@
 
 # Check linux kernel version >= 5.7
 - name: Get linux kernel version
-  shell: uname -r | cut -d '-' -f1
+  ansible.builtin.shell: uname -r | cut -d '-' -f1
   register: kernel
 
 - name: Check if minimum kernel version requirement is met
-  assert:
+  ansible.builtin.assert:
     that:
       - "'{{ kernel.stdout }}' is version('{{ fd_kernel_min }}', '>=')"
 
 - name: Get installed pacakges information
-  package_facts:
+  ansible.builtin.package_facts:
     manager: auto
 
 # Check gcc, clang and make available
 - name: Check that gcc, clang and cmake are installed
-  assert:
+  ansible.builtin.assert:
     that:
       - "'gcc' in ansible_facts.packages"
       - "'clang' in ansible_facts.packages"
@@ -24,13 +24,13 @@
 
 # Check gcc >= 8.3
 - name: Check that gcc minimum version requirement is met
-  assert:
+  ansible.builtin.assert:
     that:
       - "'{{ ansible_facts.packages.gcc[0].version }}' is version('{{ fd_gcc_min }}', '>=')"
 
 # Check rust available
 - name: Get contents of cargo/bin directory
-  stat:
+  ansible.builtin.stat:
     path: "{{ lookup('env', 'HOME') }}/.cargo/bin/{{ item }}"
   loop:
     - cargo
@@ -38,7 +38,7 @@
   register: rust
 
 - name: Check if rust binaries exist
-  assert:
+  ansible.builtin.assert:
     that:
       - item.stat.exists
   loop: "{{ rust.results }}"
