@@ -14,10 +14,10 @@
     state: directory
   when: inventory_hostname in groups[run_group]
 
-# Copy binaries from build hosts to run hosts
+# Copy binaries from build hosts to controller
 - name: Fetch binaries from build host
   ansible.posix.synchronize:
-    src: "{{ bin }}/"
+    src: "{{ bin }}/*"
     dest: "{{ fd_e2e_bin.path }}/"
     mode: pull
     recursive: false
@@ -25,15 +25,16 @@
       - "--exclude='*.d'"
       - "--exclude='*.rlib'"
       - "--exclude='*.so'"
+      - "--no-dirs"
   when: inventory_hostname == build_host
   delegate_to: localhost
 
+# Copy binaries from controller to run hosts
 - name: Copy binary from build host
-  ansible.posix.ssynchronize:
+  ansible.posix.synchronize:
     src: "{{ fd_e2e_bin.path }}/"
     dest: "{{ workdir }}/"
     checksum: true
-    recursive: false
     rsync_opts:
       - "--exclude='*.d'"
       - "--exclude='*.rlib'"
