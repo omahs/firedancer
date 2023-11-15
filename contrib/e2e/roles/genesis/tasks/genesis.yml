@@ -1,5 +1,5 @@
 ---
-- name: Set solana genesis binary and gossip host
+- name: Set solana genesis binary
   ansible.builtin.set_fact:
     genesis: "{{ workdir }}/solana-genesis"
 
@@ -9,7 +9,7 @@
     state: absent
 
 - name: Generate Genesis
-  ansible.builtin.command: >
+  ansible.builtin.shell: >
     {{ genesis }}
     --cluster-type {{ cluster_type }}
     --ledger {{ ledger }}
@@ -38,10 +38,12 @@
     - "Genesis Hash = {{ genesis_hash }}"
     - "Shred Version = {{ shred_version }}"
 
-- name: Write genesis hash to genesis.cfg
-  ansible.builtin.command: echo "GENESIS_HASH={{ genesis_hash }}" > {{ genesis_cfg }}
-  when: genesis_hash is defined
-
-- name: Write shred version to genesis.cfg
-  ansible.builtin.command: echo "SHRED_VERSION={{ shred_version }}" >> {{ genesis_cfg }}
-  when: shred_version is defined
+- name: Create genesis config
+  ansible.builtin.copy:
+    dest: "{{ genesis_cfg }}"
+    content: |
+      genesis_hash: {{ genesis_hash }}
+      shred_version: {{ shred_version }}
+  when:
+  - shred_version is defined
+  - genesis_hash is defined

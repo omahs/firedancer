@@ -1,4 +1,8 @@
 ---
+- name: Set genesis host
+  ansible.builtin.set_fact:
+    genesis_host: "{{ groups['genesis'][0] }}"
+
 - name: Install dependencies
   ansible.builtin.import_tasks: dependencies.yml
 
@@ -6,5 +10,9 @@
   ansible.builtin.import_tasks: keygen.yml
   when: override_keygen | default(false)
 
+- name: Gather cluster facts
+  ansible.builtin.import_tasks: gather.yml
+
 - name: Run the bootstrap validator
-  ansible.builtin.import_tasks: run.yml
+  ansible.builtin.import_tasks: bootstrap.yml
+  when: inventory_hostname == genesis_host

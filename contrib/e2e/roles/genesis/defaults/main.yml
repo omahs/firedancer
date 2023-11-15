@@ -4,7 +4,7 @@ cluster_type: devnet
 workdir: "{{ e2e_workdir }}"
 
 keys_dir: "{{ workdir }}/bootstrap-keys"
-genesis_cfg: "{{ workdir }}/genesis.cfg"
+genesis_cfg: "{{ workdir }}/genesis.yml"
 ledger: "{{ workdir }}/ledger"
 faucet: "{{ keys_dir }}/faucet.json"
 authority: "{{ keys_dir }}/authority.json"

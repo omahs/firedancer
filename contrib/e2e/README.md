@@ -24,9 +24,9 @@ ansible-playbook -i inventory/dev.yml playbooks/build.yml -e "ansible_user=<USER
 - [x] Build fd binaries
 - [x] Build solana binaries
 - [x] Distribute binaries
-- [ ] Genesis for new cluster
+- [x] Genesis for new cluster
 - [ ] Bootstrap fd validator
-- [ ] Bootstrap solana validator
+- [x] Bootstrap solana validator
 - [ ] Join fd validator
 - [ ] Join solana validator
 - [ ] Teardown fd validator

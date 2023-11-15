@@ -1,17 +1,15 @@
 ---
-cluster_type: devnet
+genesis_cfg: "{{ e2e_workdir }}/genesis.yml"
 
-labs_workdir: "{{ e2e_workdir }}/solana/{{ labs_repo_version }}"
+labs_repo_version: "v1.17.4"
+labs_bindir: "{{ e2e_workdir }}/solana/{{ labs_repo_version }}"
+labs_bootstrap_keys_dir: "{{ e2e_workdir }}/bootstrap-keys"
+labs_ledger: "{{ e2e_workdir }}/ledger"
 
-labs_keys_dir: "{{ labs_workdir }}/keys"
-labs_genesis_cfg: "{{ labs_workdir }}/genesis.cfg"
-labs_ledger: "{{ labs_workdir }}/ledger"
-labs_faucet: "{{ labs_keys_dir }}/faucet.json"
-labs_authority: "{{ labs_keys_dir }}/authority.json"
-labs_bootstrap_validator_lamports: 10000000000
-labs_bootstrap_validator_stake_lamports: 32282880
-labs_faucet_lamports: 5000000000000000
 labs_snapshot_interval: 200
 labs_ledger_size: 100000000
-labs_port_start: 8000
-labs_port_end: 8100
+labs_port_start: 8100
+labs_port_end: 8200
+labs_gossip_port: 8001
+labs_rpc_port: 8899
+labs_interface: bond0

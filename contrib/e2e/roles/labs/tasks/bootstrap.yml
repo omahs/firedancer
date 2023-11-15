@@ -1,23 +1,25 @@
 ---
 - name: Set solana validator and epoch info commands
   ansible.builtin.set_fact:
-    labs_validator: "{{ labs_workdir }}/solana-validator"
-    labs_epoch_cmd: "{{ labs_workdir }}/solana -ul epoch-info"
+    labs_validator: "{{ labs_bindir }}/solana-validator"
+    labs_epoch_cmd: "{{ labs_bindir }}/solana -u http://{{ labs_gossip_host }}:{{ labs_rpc_port }} epoch-info"
 
+# TODO: check if already running
+# TODO: preferably run via systemd
 - name: Run bootstrap validator
   ansible.builtin.shell: >
     {{ labs_validator }} 
-    --identity {{ labs_keys_dir }}/id.json 
-    --vote-account {{ labs_keys_dir }}/vote.json
+    --identity {{ labs_bootstrap_keys_dir }}/id.json 
+    --vote-account {{ labs_bootstrap_keys_dir }}/vote.json 
     --ledger {{ labs_ledger }} 
-    --limit-ledger-size {{ labs_ledger_size }}
-    --dynamic-port-range {{ labs_port_start }}-{{ labs_port_end }}
+    --limit-ledger-size {{ labs_ledger_size }} 
+    --dynamic-port-range {{ labs_port_start }}-{{ labs_port_end }} 
     --no-genesis-fetch 
     --no-snapshot-fetch 
     --no-poh-speed-test 
     --no-os-network-limits-test 
-    --expected-shred-version {{ shred_version }} 
-    --expected-genesis-hash {{ genesis_hash }} 
+    --expected-shred-version {{ genesis_yml.shred_version }} 
+    --expected-genesis-hash {{ genesis_yml.genesis_hash }} 
     --no-wait-for-vote-to-start-leader 
     --incremental-snapshots 
     --full-snapshot-interval-slots {{ labs_snapshot_interval }} 
@@ -29,6 +31,8 @@
     --tpu-enable-udp 
     --log {{ labs_ledger }}/validator.log &
   register: validator_output
+  async: 3600
+  poll: 0
 
 - name: Wait for snapshot
   ansible.builtin.shell: "{{ labs_epoch_cmd }} | grep -oP 'Slot: \\K\\d+'" 

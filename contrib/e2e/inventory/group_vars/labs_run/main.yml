@@ -1,4 +1,2 @@
 ---
-labs_gossip_host:
-labs_gossip_port: 9901
-labs_rpc_port: 9988
+labs_repo_version: "v1.17.4"

@@ -1,0 +1,20 @@
+---
+# Gather facts about the cluster we are joining
+- name: Read genesis config
+  ansible.builtin.slurp:
+    src: "{{ genesis_cfg }}"
+  register: genesis_yml
+  when: inventory_hostname == genesis_host
+
+- name: Parse into yaml facts
+  ansible.builtin.set_fact:
+    genesis_yml: "{{ hostvars[genesis_host].genesis_yml.content | b64decode | from_yaml }}"
+
+- name: Get host ip addresses
+  ansible.builtin.setup:
+    gather_subset: all_ipv4_addresses
+  register: ip_addresses
+
+- name: Set gossip host ip
+  ansible.builtin.set_fact:
+    labs_gossip_host: "{{ ip_addresses['ansible_facts']['ansible_' + labs_interface]['ipv4']['address'] }}"

@@ -1,7 +1,7 @@
 ---
 - name: Set solana keygen binary
   ansible.builtin.set_fact:
-    labs_keygen: "{{ labs_workdir }}/solana-keygen"
+    labs_keygen: "{{ labs_bindir }}/solana-keygen"
 
 - name: Create keys directory
   ansible.builtin.file:
@@ -18,3 +18,4 @@
   - "id"
   - "vote"
   - "stake"
+  when: inventory_hostname not in groups['genesis']
