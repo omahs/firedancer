@@ -18,4 +18,4 @@ labs_build_targets: "-p solana-cli -p solana-validator -p solana-genesis -p sola
 labs_build_profile: "release"
 
 # distribute
-e2e_workdir: "~/fd_e2e"
+e2e_workdir: "/home/{{ fd_user }}/fd_e2e"

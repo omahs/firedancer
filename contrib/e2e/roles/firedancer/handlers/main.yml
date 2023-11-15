@@ -1,5 +1,0 @@
----
-- name: Restart Firedancer
-  ansible.builtin.systemd:
-    name: firedancer.service
-    state: restarted

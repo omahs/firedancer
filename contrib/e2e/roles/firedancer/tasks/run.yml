@@ -9,3 +9,9 @@
   become: yes
   notify:
     - Restart Firedancer
+
+- name: Restart Firedancer
+  ansible.builtin.systemd:
+    name: firedancer.service
+    state: restarted
+  become: yes
