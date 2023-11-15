@@ -5,7 +5,7 @@
     labs_epoch_cmd: "{{ labs_workdir }}/solana -ul epoch-info"
 
 - name: Run bootstrap validator
-  ansible.builtin.command: >
+  ansible.builtin.shell: >
     {{ labs_validator }} 
     --identity {{ labs_keys_dir }}/id.json 
     --vote-account {{ labs_keys_dir }}/vote.json
@@ -27,19 +27,12 @@
     --full-rpc-api 
     --tpu-disable-quic 
     --tpu-enable-udp 
-    --log {{ labs_ledger }}/validator.log
-  async: 0
-  poll: -1
+    --log {{ labs_ledger }}/validator.log &
   register: validator_output
 
-- name: Print Validator PID
-  ansible.builtin.debug:
-    var: validator_output.pid
-  when: validator_output.rc == 0
-
 - name: Wait for snapshot
-  ansible.builtin.shell: "{{ labs_epoch_cmd }} || true | grep -o -P '(?<=Slot:).*(?=Epoch:)' | xargs"
-  register: slot
-  until: slot_value.stdout | int > {{ labs_snapshot_interval }}
+  ansible.builtin.shell: "{{ labs_epoch_cmd }} | grep -oP 'Slot: \\K\\d+'" 
+  register: slot_value
+  until: (slot_value.stdout | int) > labs_snapshot_interval
   retries: 100
   delay: 2

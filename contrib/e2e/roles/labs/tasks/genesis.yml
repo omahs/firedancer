@@ -4,6 +4,12 @@
     labs_genesis: "{{ labs_workdir }}/solana-genesis"
     labs_gossip_host: "{{ inventory_hostname }}"
 
+# todo move this to cleanup
+- name: Cleanup ledger
+  ansible.builtin.file:
+    path: "{{ labs_ledger }}/"
+    state: absent
+
 - name: Generate Genesis
   ansible.builtin.command: >
     {{ labs_genesis }}
