@@ -3,6 +3,8 @@
 build_fd: true
 build_labs: false
 
+skip_deps: false
+
 # fd build
 fd_kernel_min: 4.18
 fd_gcc_min: 8.3

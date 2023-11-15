@@ -1,0 +1,28 @@
+---
+- name: Set solana keygen binary
+  ansible.builtin.set_fact:
+    keygen: "{{ workdir }}/solana-keygen"
+
+- name: Create keys directory
+  ansible.builtin.file:
+    path: "{{ keys_dir }}"
+    state: directory
+
+- name: Create mint key and staking authority
+  ansible.builtin.command: "{{ keygen }} new --no-bip39-passphrase -o {{ item }}"
+  args:
+    creates: "{{ item }}"
+  loop:
+  - "{{ faucet }}"
+  - "{{ authority }}"
+
+- name: Create bootstrap validator keys
+  ansible.builtin.shell: "{{ keygen }} new --no-bip39-passphrase --force -o {{ keys_dir }}/{{ item }}.json > {{ keys_dir }}/{{ item }}.seed"
+  args:
+    creates:
+      - "{{ keys_dir }}/{{ item }}.json"
+      - "{{ keys_dir }}/{{ item }}.seed"
+  loop:
+  - "id"
+  - "vote"
+  - "stake"

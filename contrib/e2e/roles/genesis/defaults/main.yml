@@ -1,0 +1,15 @@
+---
+cluster_type: devnet
+
+workdir: "{{ e2e_workdir }}"
+
+keys_dir: "{{ workdir }}/bootstrap-keys"
+genesis_cfg: "{{ workdir }}/genesis.cfg"
+ledger: "{{ workdir }}/ledger"
+faucet: "{{ keys_dir }}/faucet.json"
+authority: "{{ keys_dir }}/authority.json"
+bootstrap_validator_lamports: 10000000000
+bootstrap_validator_stake_lamports: 322828800
+faucet_lamports: 5000000000000000
+snapshot_interval: 200
+ledger_size: 100000000

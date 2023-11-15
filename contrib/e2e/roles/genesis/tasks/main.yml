@@ -1,0 +1,7 @@
+---
+- name: Creating mint and stake authority key and keys for bootstrap validator
+  ansible.builtin.import_tasks: keygen.yml
+  when: override_keygen | default(false)
+
+- name: Run genesis
+  ansible.builtin.import_tasks: genesis.yml

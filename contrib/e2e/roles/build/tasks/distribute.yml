@@ -17,7 +17,7 @@
 # Copy binaries from build hosts to controller
 - name: Fetch binaries from build host
   ansible.posix.synchronize:
-    src: "{{ bin }}/*"
+    src: "{{ bin }}"
     dest: "{{ fd_e2e_bin.path }}/"
     mode: pull
     recursive: false

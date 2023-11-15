@@ -1,0 +1,47 @@
+---
+- name: Set solana genesis binary and gossip host
+  ansible.builtin.set_fact:
+    genesis: "{{ workdir }}/solana-genesis"
+
+- name: Cleanup ledger
+  ansible.builtin.file:
+    path: "{{ ledger }}/"
+    state: absent
+
+- name: Generate Genesis
+  ansible.builtin.command: >
+    {{ genesis }}
+    --cluster-type {{ cluster_type }}
+    --ledger {{ ledger }}
+    --enable-warmup-epochs
+    --bootstrap-validator "{{ keys_dir }}/id.json" "{{ keys_dir }}/vote.json" "{{ keys_dir }}/stake.json"
+    --bootstrap-stake-authorized-pubkey "{{ keys_dir }}/id.json"
+    --bootstrap-validator-lamports {{ bootstrap_validator_lamports }}
+    --bootstrap-validator-stake-lamports {{ bootstrap_validator_stake_lamports }}
+    --faucet-pubkey {{ faucet }}
+    --faucet-lamports {{ faucet_lamports }}
+  register: genesis_output
+
+- name: Extract Genesis Hash
+  ansible.builtin.set_fact:
+    genesis_hash: "{{ genesis_output.stdout | regex_search('Genesis hash: (.+?)\\n', '\\1') | first | trim }} "
+  failed_when: genesis_hash is not defined
+
+- name: Extract Shred Version
+  ansible.builtin.set_fact:
+    shred_version: "{{ genesis_output.stdout | regex_search('Shred version: (.+?)\\n', '\\1') | first | trim }} "
+  failed_when: shred_version is not defined
+
+- name: Display genesis info
+  ansible.builtin.debug:
+    msg:
+    - "Genesis Hash = {{ genesis_hash }}"
+    - "Shred Version = {{ shred_version }}"
+
+- name: Write genesis hash to genesis.cfg
+  ansible.builtin.command: echo "GENESIS_HASH={{ genesis_hash }}" > {{ genesis_cfg }}
+  when: genesis_hash is defined
+
+- name: Write shred version to genesis.cfg
+  ansible.builtin.command: echo "SHRED_VERSION={{ shred_version }}" >> {{ genesis_cfg }}
+  when: shred_version is defined

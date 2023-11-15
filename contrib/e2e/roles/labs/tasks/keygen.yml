@@ -8,15 +8,7 @@
     path: "{{ labs_keys_dir }}"
     state: directory
 
-- name: Create mint key and staking authority
-  ansible.builtin.command: "{{ labs_keygen }} new --no-bip39-passphrase -o {{ item }}"
-  args:
-    creates: "{{ item }}"
-  loop:
-  - "{{ labs_faucet }}"
-  - "{{ labs_authority }}"
-
-- name: Create bootstrap validator keys
+- name: Create validator keys
   ansible.builtin.shell: "{{ labs_keygen }} new --no-bip39-passphrase --force -o {{ labs_keys_dir }}/{{ item }}.json > {{ labs_keys_dir }}/{{ item }}.seed"
   args:
     creates:

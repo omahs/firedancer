@@ -1,0 +1,7 @@
+---
+- name: Create the genesis for the new cluster
+  hosts: genesis[0]
+  gather_facts: no
+  become: no
+  roles:
+    - roles/genesis

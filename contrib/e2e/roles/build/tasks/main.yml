@@ -8,48 +8,64 @@
 
 # Install dependencies
 - name: Install dependencies if missing
-  ansible.builtin.import_tasks: dependencies.yml
-  when: inventory_hostname in [fd_build_host, labs_build_host]
+  ansible.builtin.include_tasks: dependencies.yml
+  when:
+  - inventory_hostname in [fd_build_host, labs_build_host]
+  - skip_deps is false
 
 # Check asserts
 - name: Check build pre-requisites
-  ansible.builtin.import_tasks: asserts.yml
-  when: inventory_hostname in [fd_build_host, labs_build_host]
+  ansible.builtin.include_tasks: asserts.yml
+  when:
+  - inventory_hostname in [fd_build_host, labs_build_host]
 
 - name: Build and distribute firedancer binaries
   block:
   # Build firedancer
   - name: Build firedancer binaries
-    ansible.builtin.import_tasks: fd_build.yml
+    ansible.builtin.include_tasks: fd_build.yml
     when:
     - inventory_hostname == fd_build_host
 
   # Distribute firedancer binaries
   - name: Distribute firedancer binaries
-    ansible.builtin.import_tasks: distribute.yml
+    ansible.builtin.include_tasks: distribute.yml
     vars:
       workdir: "{{ e2e_workdir }}/firedancer/{{ fd_repo_version }}"
-      bin: "{{ hostvars[fd_build_host].fd_bin }}"
+      bin: "{{ hostvars[fd_build_host].fd_bin }}/*"
       build_host: "{{ fd_build_host }}"
       run_group: "fd_run"
-  when: build_fd
+  when: build_fd is true
 
 - name: Build and distribute solana binaries
   block:
   # Build solana
   - name: Build solana binaries
-    ansible.builtin.import_tasks: labs_build.yml
+    ansible.builtin.include_tasks: labs_build.yml
     when: inventory_hostname == labs_build_host
 
   # Distribute solana binaries
   - name: Distribute solana binaries
-    ansible.builtin.import_tasks: distribute.yml
+    ansible.builtin.include_tasks: distribute.yml
     vars:
       workdir: "{{ e2e_workdir }}/solana/{{ labs_repo_version }}"
-      bin: "{{ hostvars[labs_build_host].labs_bin }}"
+      bin: "{{ hostvars[labs_build_host].labs_bin }}/*"
       build_host: "{{ labs_build_host }}"
       run_group: "labs_run"
-  when: build_labs
+
+  # TODO: this is kinda ugly
+  # Get the solana-{genesis, keygen} binary to the correct host
+  - name: Copy solana-genesis and keygen binary
+    ansible.builtin.include_tasks: distribute.yml
+    vars:
+      workdir: "{{ e2e_workdir }}"
+      bin: "{{ hostvars[labs_build_host].labs_bin }}/{{ item }}"
+      build_host: "{{ labs_build_host }}"
+      run_group: "genesis"
+    loop:
+    - solana-genesis
+    - solana-keygen
+  when: build_labs is true
 
 # Cleanup repo clones
 - name: Delete fd repo directory
@@ -57,9 +73,11 @@
     path: "{{ hostvars[fd_build_host].fd_repo_dir }}"
     state: absent
   delegate_to: "{{ fd_build_host }}"
+  when: build_fd is true
 
 - name: Delete labs directory
   ansible.builtin.file:
     path: "{{ hostvars[labs_build_host].labs_repo_dir }}"
     state: absent
   delegate_to: "{{ labs_build_host }}"
+  when: build_labs is true

@@ -2,12 +2,9 @@
 - name: Install dependencies
   ansible.builtin.import_tasks: dependencies.yml
 
-- name: Creating mint and stake authority key and keys for bootstrap validator
+- name: Creating validator keys
   ansible.builtin.import_tasks: keygen.yml
   when: override_keygen | default(false)
-
-- name: Run genesis
-  ansible.builtin.import_tasks: genesis.yml
 
 - name: Run the bootstrap validator
   ansible.builtin.import_tasks: run.yml
