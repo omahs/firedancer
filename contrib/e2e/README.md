@@ -11,23 +11,23 @@ and the hosts specified in the inventory.
 ## Development
 
 Create a `inventory/dev.yml` file similar to `inventory/hosts.yml` and populate
-it with host information.  Then you can run with `-i inventory/custom.yml`.  If
-you want to use a different ansible user, specify that with `-u <USER>` to the
+it with host information.  Then you can run with `-i inventory/dev.yml`.  If
+you want to use a different ansible user, specify that with `-e "ansible_user=<USER>"` to the
 `ansible-playbook` command. For example:
 
 ```
-ansible-playbook -i inventory/custom.yml playbooks/build.yml -u <USER>
+ansible-playbook -i inventory/dev.yml playbooks/build.yml -e "ansible_user=<USER>"
 ```
 
 ## Roles
 
-- Build fd binaries
-- Build solana binaries
-- Distribute binaries
-- Genesis for new cluster
-- Bootstrap fd validator
-- Bootstrap solana validator
-- Join fd validator
-- Join solana validator
-- Teardown fd validator
-- Teardown solana validator
+- [x] Build fd binaries
+- [x] Build solana binaries
+- [x] Distribute binaries
+- [ ] Genesis for new cluster
+- [ ] Bootstrap fd validator
+- [ ] Bootstrap solana validator
+- [ ] Join fd validator
+- [ ] Join solana validator
+- [ ] Teardown fd validator
+- [ ] Teardown solana validator

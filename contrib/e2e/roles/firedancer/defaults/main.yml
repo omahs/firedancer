@@ -5,6 +5,6 @@ fd_bin: fdctl
 fd_config_dir: "{{ fd_workdir }}/config"
 fd_config_file: "fd_config.toml"
 # TODO: define these or pass them as vars on the cmd line
-fd_user: firedancer
+fd_user: "{{ ansible_user }}"
 fd_identity_keypair:
 fd_vote_keypair:
