@@ -1,8 +1,8 @@
 ---
-- name: Set solana validator and epoch info commands
+- name: Set solana validator and solana commands
   ansible.builtin.set_fact:
     labs_validator: "{{ labs_bindir }}/solana-validator"
-    labs_epoch_cmd: "{{ labs_bindir }}/solana -u http://{{ labs_gossip_host }}:{{ labs_rpc_port }} epoch-info"
+    labs_solana_cmd: "{{ labs_bindir }}/solana -u http://{{ labs_gossip_host }}:{{ labs_rpc_port }}"
 
 - name: Copy labs bootstrap validator template to system
   ansible.builtin.template:
@@ -17,7 +17,7 @@
   become: yes
 
 - name: Wait for snapshot
-  ansible.builtin.shell: "{{ labs_epoch_cmd }} | grep -oP 'Slot: \\K\\d+'" 
+  ansible.builtin.shell: "{{ labs_solana_cmd }} epoch-info | grep -oP 'Slot: \\K\\d+'" 
   register: slot_value
   until: (slot_value.stdout | int) > labs_snapshot_interval
   retries: 100

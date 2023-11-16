@@ -24,7 +24,7 @@ ExecStart={{ labs_validator }} \
     --full-rpc-api \
     --tpu-disable-quic \
     --tpu-enable-udp \
-    --log {{ labs_ledger }}/validator.log
+    --log {{ labs_ledger }}/bootstrap_validator.log
 Restart=always
 RestartSec=10s
 

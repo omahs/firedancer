@@ -1,0 +1,22 @@
+[Unit]
+Description=Solana Labs Join Validator
+After=network.target
+
+[Service]
+ExecStart={{ labs_validator }} \
+    --allow-private-addr \
+    --identity {{ labs_join_keys_dir }}/id.json \
+    --ledger {{ labs_ledger }} \
+    --limit-ledger-size {{ labs_ledger_size }} \
+    --dynamic-port-range {{ labs_port_start }}-{{ labs_port_end }} \
+    --no-poh-speed-test \
+    --no-os-network-limits-test \
+    --entrypoint {{ labs_solana_entrypoint }} \
+    --rpc-port {{ labs_rpc_port }} \
+    --full-rpc-api \
+    --log {{ labs_ledger }}/join_validator.log
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

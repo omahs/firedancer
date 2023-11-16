@@ -2,6 +2,7 @@
 genesis_cfg: "{{ e2e_workdir }}/genesis.yml"
 labs_keys_dir: "{{ e2e_workdir }}/bootstrap-keys"
 labs_faucet: "{{ labs_keys_dir }}/faucet.json"
+labs_authority: "{{ labs_keys_dir }}/authority.json"
 
 labs_repo_version: "v1.17.4"
 labs_bindir: "{{ e2e_workdir }}/solana/{{ labs_repo_version }}"
@@ -21,3 +22,4 @@ labs_group: "{{ ansible_user_gid }}"
 
 # join 
 vote_sol: 10
+stake_sol: 30.3228288
