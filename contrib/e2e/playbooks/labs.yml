@@ -2,6 +2,5 @@
 - name: Setup solana labs on hosts
   hosts: labs_run
   gather_facts: no
-  become: no
   roles:
     - roles/labs

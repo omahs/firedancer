@@ -2,13 +2,11 @@
 # Run the configure command when the system boots,
 # each time before the validator is started,
 # and whenever the configuration file changes
-- name: Copy firedancer service template to the appropriate location
+- name: Copy firedancer service template to system
   ansible.builtin.template:
     src: firedancer.service.j2
     dest: /etc/systemd/system/firedancer.service
   become: yes
-  notify:
-    - Restart Firedancer
 
 - name: Restart Firedancer
   ansible.builtin.systemd:

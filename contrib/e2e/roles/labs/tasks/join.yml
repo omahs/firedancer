@@ -1,0 +1,26 @@
+---
+- name: Transfer lamports and create the vote account
+  ansible
+  ansible.builtin.shell: >
+    {{ labs_bindir }}/solana -u http://{{ labs_gossip_host }}:{{ labs_rpc_port }} transfer 
+    -k {{ labs_faucet }} 
+    --allow-unfunded-recipient {{ labs_keysdir }}/id.json {{ vote_sol }}
+
+- name: Create vote account
+  ansible.builtin.shell: >
+    {{ labs_bindir }}/solana -u http://{{ labs_gossip_host }}:{{ labs_rpc_port }} create-vote-account 
+    -k {{ labs_keysdir }}/id.json 
+    --allow-unsafe-authorized-withdrawer {{ labs_keysdir }}/vote.json {{ labs_keysdir }}/id.json {{ labs_keysdir }}/id.json
+
+- name: Copy labs join validator template to system
+  ansible.builtin.template:
+    src: labs_join_validator.service.j2
+    dest: /etc/systemd/system/labs_join_validator.service
+  become: yes
+
+- name: Start labs join service if not already running
+  ansible.builtin.systemd:
+    name: labs_join_validator
+    state: started
+  become: yes
+

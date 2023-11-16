@@ -1,5 +1,7 @@
 ---
 genesis_cfg: "{{ e2e_workdir }}/genesis.yml"
+labs_keys_dir: "{{ e2e_workdir }}/bootstrap-keys"
+labs_faucet: "{{ labs_keys_dir }}/faucet.json"
 
 labs_repo_version: "v1.17.4"
 labs_bindir: "{{ e2e_workdir }}/solana/{{ labs_repo_version }}"
@@ -13,3 +15,9 @@ labs_port_end: 8200
 labs_gossip_port: 8001
 labs_rpc_port: 8899
 labs_interface: bond0
+
+labs_user: "{{ ansible_user }}"
+labs_group: "{{ ansible_user_gid }}"
+
+# join 
+vote_sol: 10

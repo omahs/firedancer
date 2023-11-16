@@ -1,0 +1,32 @@
+[Unit]
+Description=Solana Labs Bootstrap Validator
+After=network.target
+
+[Service]
+ExecStart={{ labs_validator }} \
+    --identity {{ labs_bootstrap_keys_dir }}/id.json \
+    --vote-account {{ labs_bootstrap_keys_dir }}/vote.json \
+    --ledger {{ labs_ledger }} \
+    --limit-ledger-size {{ labs_ledger_size }} \
+    --dynamic-port-range {{ labs_port_start }}-{{ labs_port_end }} \
+    --no-genesis-fetch \
+    --no-snapshot-fetch \
+    --no-poh-speed-test \
+    --no-os-network-limits-test \
+    --expected-shred-version {{ genesis_yml.shred_version }} \
+    --expected-genesis-hash {{ genesis_yml.genesis_hash }} \
+    --no-wait-for-vote-to-start-leader \
+    --incremental-snapshots \
+    --full-snapshot-interval-slots {{ labs_snapshot_interval }} \
+    --rpc-port {{ labs_rpc_port }} \
+    --gossip-port {{ labs_gossip_port }} \
+    --gossip-host {{ labs_gossip_host }} \
+    --full-rpc-api \
+    --tpu-disable-quic \
+    --tpu-enable-udp \
+    --log {{ labs_ledger }}/validator.log
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

@@ -3,9 +3,15 @@
   ansible.builtin.set_fact:
     genesis: "{{ workdir }}/solana-genesis"
 
-- name: Cleanup ledger
+- name: Archive current ledger
+  ansible.builtin.archive:
+    path: "{{ ledger }}"
+    dest: "{{ ledger }}_{{ ansible_date_time.epoch }}.tar.gz"
+    format: gz
+
+- name: Remove current ledger
   ansible.builtin.file:
-    path: "{{ ledger }}/"
+    path: "{{ ledger }}"
     state: absent
 
 - name: Generate Genesis

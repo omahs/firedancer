@@ -1,6 +1,6 @@
 # Firedancer End-to-End Tests
 
-The ansible playbooks here can setup a full Solana/Firedancer cluster and run
+The ansible playbooks here can setup a full Solana Labs/Firedancer cluster and run
 various tests against the cluster to simulate real world scenarios.
 
 ## Pre-requisites
@@ -22,12 +22,12 @@ ansible-playbook -i inventory/dev.yml playbooks/build.yml -e "ansible_user=<USER
 ## Roles
 
 - [x] Build fd binaries
-- [x] Build solana binaries
+- [x] Build solana labs binaries
 - [x] Distribute binaries
 - [x] Genesis for new cluster
 - [ ] Bootstrap fd validator
-- [x] Bootstrap solana validator
+- [x] Bootstrap solana labs validator
 - [ ] Join fd validator
-- [ ] Join solana validator
+- [ ] Join solana labs validator
 - [ ] Teardown fd validator
-- [ ] Teardown solana validator
+- [ ] Teardown solana labs validator
